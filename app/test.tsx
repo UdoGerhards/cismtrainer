@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Button, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
@@ -9,7 +9,6 @@ import { ThemedView } from '@/components/themed-view';
 import { useNavigation } from 'expo-router';
 import { useEffect, useState } from "react";
 
-import Question from '@/components/ui/test/question';
 import client from '@/scripts/test/client';
 import { QuestionItem } from '@/scripts/test/if_question';
 
@@ -17,7 +16,6 @@ import { QuestionItem } from '@/scripts/test/if_question';
 export default function HomeScreen() {
 
   const navigation = useNavigation();
-
 
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,24 +60,7 @@ export default function HomeScreen() {
         <HelloWave />
       </ThemedView>
 
-      <Question 
-        questions={questions} 
-        checked={checked} 
-      />
-
-      <ThemedView style={styles.fixToText}>
-        <Button
-          title=" OK "
-          onPress={() => {
-            client.sendGivenAnswer();
-            setChecked(true);
-          }}
-        />
-
-        <Button
-          title="Next"
-          onPress={loadNextQuestion}
-        />
+      <ThemedView style={styles.stepContainer}>
       </ThemedView>
 
     </ParallaxScrollView>

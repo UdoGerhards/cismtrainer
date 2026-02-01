@@ -1,23 +1,34 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { Drawer } from 'expo-router/drawer';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
+      <Drawer>
+        {/* Tabs als Hauptscreen */}
+        <Drawer.Screen
+          name="(tabs)"
+          options={{
+            title: "Random question",
+            headerShown: true, // Header kommt aus (tabs)/_layout.tsx
+          }}
+        />
+
+        {/* Beispiel: zusätzlicher Drawer-Screen */}
+        <Drawer.Screen
+          name="test"
+          options={{
+            title: "CISM Test",
+          }}
+        />
+      </Drawer>
+
       <StatusBar style="auto" />
     </ThemeProvider>
   );
