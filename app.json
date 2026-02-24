@@ -23,7 +23,13 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro",
+      "devServer": {
+        "allowedOrigins": [
+          "https://web.localhost"
+        ]
+      }
     },
     "plugins": [
       "expo-router",
@@ -43,6 +49,8 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
-  }
+    },
+    "sdkVersion": "54.0.0"
+  },
+  "name": "cismtrainer"
 }

@@ -11,22 +11,24 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Drawer>
-        {/* Tabs als Hauptscreen */}
+
+        {/* 1. Random Question als erster Eintrag */}
         <Drawer.Screen
-          name="(tabs)"
+          name="qst"
           options={{
-            title: "Random question",
-            headerShown: true, // Header kommt aus (tabs)/_layout.tsx
+            title: "Random Question",
+            headerShown: true,
           }}
         />
 
-        {/* Beispiel: zusätzlicher Drawer-Screen */}
+        {/* 2. Zweiter Eintrag */}
         <Drawer.Screen
-          name="test"
+          name="(tst)"
           options={{
             title: "CISM Test",
           }}
         />
+
       </Drawer>
 
       <StatusBar style="auto" />
