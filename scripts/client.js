@@ -1,4 +1,7 @@
-import fetch from "node-fetch";
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
+
+const TOKEN_KEY = "auth_token";
 
 class Client {
   constructor() {
@@ -6,35 +9,65 @@ class Client {
     this.token = null;
   }
 
-  setToken(token) {
+  /*
+  ==========================================
+  STORAGE
+  ==========================================
+  */
+
+  async getToken() {
+    if (Platform.OS === "web") {
+      if (typeof window === "undefined") return null;
+
+      return localStorage.getItem(TOKEN_KEY);
+    }
+
+    return SecureStore.getItemAsync(TOKEN_KEY);
+  }
+
+  async setToken(token) {
     this.token = token;
+
+    if (Platform.OS === "web") {
+      localStorage.setItem(TOKEN_KEY, token);
+      return;
+    }
+
+    await SecureStore.setItemAsync(TOKEN_KEY, token);
   }
 
-  clearToken() {
+  async clearToken() {
     this.token = null;
+
+    if (Platform.OS === "web") {
+      localStorage.removeItem(TOKEN_KEY);
+      return;
+    }
+
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
   }
 
-  getAuthHeaders() {
-    if (!this.token) return {};
-
-    return {
-      Authorization: `Bearer ${this.token}`,
-    };
-  }
+  /*
+  ==========================================
+  CORE REQUEST
+  ==========================================
+  */
 
   async request(url, options = {}) {
+    const token = await this.getToken();
+
     const res = await fetch(`${this.apiBase}${url}`, {
       ...options,
       headers: {
         "Content-Type": "application/json",
-        ...this.getAuthHeaders(),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options.headers || {}),
       },
-      agent: this.httpsAgent,
     });
 
     if (res.status === 401) {
-      this.clearToken();
+      await this.clearToken();
+
       const error = new Error("UNAUTHORIZED");
       error.status = 401;
       throw error;
@@ -58,9 +91,11 @@ class Client {
       method: "POST",
     });
 
-    this.setToken(data.token);
+    if (data?.token) {
+      await this.setToken(data.token);
+    }
 
-    return data.user;
+    return data;
   }
 
   async checkAuth() {

@@ -1,9 +1,8 @@
-import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Image } from 'expo-image';
-import { Button, StyleSheet } from 'react-native';
+import { Button, LogBox, StyleSheet } from 'react-native';
 
 import { useEffect, useRef, useState } from "react";
 
@@ -11,7 +10,11 @@ import Question from '@/components/ui/tst/question';
 import client from '@/scripts/client';
 import { QuestionItem } from '@/scripts/model/if_question';
 
-import { Stack } from "expo-router"; // 🔥 Wichtig für Header-Titel
+import { Stack } from "expo-router";
+
+LogBox.ignoreLogs([
+  "props.pointerEvents is deprecated"
+]);// 🔥 Wichtig für Header-Titel
 
 export default function HomeScreen() {
 
@@ -43,7 +46,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     loadNextQuestion();
-  }, {});
+  }, []);
 
   if (loading) {
     return (
@@ -72,8 +75,7 @@ export default function HomeScreen() {
         }>
 
         <ThemedView style={styles.titleContainer}>
-          <ThemedText type="title">Welcome!</ThemedText>
-          <HelloWave />
+          <ThemedText type="title">Question!</ThemedText>
         </ThemedView>
 
         <Question

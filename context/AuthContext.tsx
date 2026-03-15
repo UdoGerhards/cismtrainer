@@ -1,6 +1,6 @@
 import client from "@/scripts/client";
 import * as SecureStore from "expo-secure-store";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 
 const TOKEN_KEY = "auth_token";
@@ -14,15 +14,18 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+//
+// 🔐 Storage Helper
+//
 
-// 🔐 Storage Helper (Web + Native)
-async function getItem(key: string) {
+async function getItem(key: string): Promise<string | null> {
 
   if (Platform.OS === "web") {
+    if (typeof window === "undefined") return null;
     return localStorage.getItem(key);
   }
 
-  return await SecureStore.getItemAsync(key);
+  return SecureStore.getItemAsync(key);
 }
 
 async function setItem(key: string, value: string) {
@@ -45,36 +48,61 @@ async function deleteItem(key: string) {
   await SecureStore.deleteItemAsync(key);
 }
 
+//
+// 🔐 Provider
+//
 
 export function AuthProvider({ children }: any) {
 
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const initialized = useRef(false);
+
   useEffect(() => {
+
+    if (initialized.current) return;
+    initialized.current = true;
+
     init();
+
   }, []);
+
+  //
+  // Init
+  //
 
   async function init() {
 
     try {
 
-      let storedToken = await getItem(TOKEN_KEY);
+      const storedToken = await getItem(TOKEN_KEY);
 
-      if (!storedToken) {
+      if (storedToken) {
 
-        const response = await client.login();
+        setToken(storedToken);
+        return;
 
-        storedToken = response.token;
-
-        await setItem(TOKEN_KEY, storedToken);
       }
 
-      setToken(storedToken);
+      console.log("No token found → logging in");
+
+      const response = await client.login();
+
+      console.log("Login response:", response);
+
+      if (!response?.token) {
+        console.error("Login response missing token");
+        return;
+      }
+
+      await setItem(TOKEN_KEY, response.token);
+
+      setToken(response.token);
 
     } catch (err) {
 
-      console.log("Login failed", err);
+      console.log("Login failed:", err);
       setToken(null);
 
     } finally {
@@ -84,14 +112,36 @@ export function AuthProvider({ children }: any) {
     }
   }
 
+  //
+  // Login
+  //
+
   async function login() {
 
-    const response = await client.login();
+    try {
 
-    await setItem(TOKEN_KEY, response.token);
+      const response = await client.login();
 
-    setToken(response.token);
+      console.log("Login response:", response);
+
+      if (!response?.token) {
+        throw new Error("Login response missing token");
+      }
+
+      await setItem(TOKEN_KEY, response.token);
+
+      setToken(response.token);
+
+    } catch (err) {
+
+      console.log("Login error:", err);
+
+    }
   }
+
+  //
+  // Logout
+  //
 
   async function logout() {
 
@@ -107,6 +157,10 @@ export function AuthProvider({ children }: any) {
     </AuthContext.Provider>
   );
 }
+
+//
+// Hook
+//
 
 export function useAuth() {
 

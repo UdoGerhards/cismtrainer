@@ -21,12 +21,10 @@ export default function HomeScreen() {
         // Login über Zertifikat → JWT holen
         const loggedUser = await client.login();
 
-        console.log(JSON.stringify(loggedUser, null, 2));
-
         setUser(loggedUser);
 
         // 👉 Weiterleitung zur Questions-Seite
-        router.replace("/(qst)");
+        router.replace("/question");
 
       } catch (err: any) {
 

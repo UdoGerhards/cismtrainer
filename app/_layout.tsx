@@ -16,7 +16,7 @@ function AppContent() {
   // 🔐 Während AuthContext Token prüft
   if (loading) {
     return (
-      <View style={{ flex:1, justifyContent:"center", alignItems:"center" }}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />
       </View>
     );
@@ -25,22 +25,42 @@ function AppContent() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
 
-      <Drawer>
+      <Drawer
+        screenOptions={{
+          headerTitle: "",
+        }}
+      >
+
+
+        <Drawer.Screen
+          name="index"
+          options={{
+            title: "Performance",
+            headerShown: true,
+          }}
+        />
 
         {/* Random Question */}
         <Drawer.Screen
-          name="qst"
+          name="question"
           options={{
-            title: "Random Question",
+            title: "Random question",
             headerShown: true,
           }}
         />
 
         {/* CISM Test */}
         <Drawer.Screen
-          name="(tst)"
+          name="test"
           options={{
             title: "CISM Test",
+          }}
+        />
+
+        <Drawer.Screen
+          name="unauthorized"
+          options={{
+            drawerItemStyle: { display: "none" }
           }}
         />
 
