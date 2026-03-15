@@ -8,8 +8,8 @@ import { Button, StyleSheet } from 'react-native';
 import { useEffect, useRef, useState } from "react";
 
 import Question from '@/components/ui/tst/question';
+import client from '@/scripts/client';
 import { QuestionItem } from '@/scripts/model/if_question';
-import client from '@/scripts/tst/client';
 
 import { router, useLocalSearchParams } from "expo-router";
 

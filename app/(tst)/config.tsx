@@ -1,4 +1,4 @@
-import client from '@/scripts/tst/client';
+import client from '@/scripts/client';
 
 import { router } from "expo-router";
 import { useState } from "react";

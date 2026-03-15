@@ -2,7 +2,7 @@ import Pie from "@/components/charts/pie.chart";
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import client from "@/scripts/tst/client";
+import client from "@/scripts/client";
 import { Image } from 'expo-image';
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";

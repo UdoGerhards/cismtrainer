@@ -2,8 +2,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import Checkbox from '@/components/ui/checkbox';
 import { Answer } from "@/scripts/model/if_answer";
-import TestAnswer from '@/scripts/model/testModel/testAnswer';
-import client from '@/scripts/tst/client';
+//import TestAnswer from '@/scripts/model/testModel/testAnswer';
+//import client from '@/scripts/tst/client';
 import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 

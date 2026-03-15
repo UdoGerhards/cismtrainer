@@ -1,94 +1,106 @@
+import fetch from "node-fetch";
+
 class Client {
   constructor() {
-    this.apiBase = "/api";
+    this.apiBase = "https://localhost/api";
+    this.token = null;
   }
 
-  async fetchQuestion() {
-    try {
-      const res = await fetch(`${this.apiBase}/question`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
+  setToken(token) {
+    this.token = token;
+  }
 
-      if (!res.ok) throw new Error("Failed to fetch question");
-      return await res.json();
-    } catch (err) {
-      console.error("fetchQuestion() failed:", err);
-      throw err;
+  clearToken() {
+    this.token = null;
+  }
+
+  getAuthHeaders() {
+    if (!this.token) return {};
+
+    return {
+      Authorization: `Bearer ${this.token}`,
+    };
+  }
+
+  async request(url, options = {}) {
+    const res = await fetch(`${this.apiBase}${url}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...this.getAuthHeaders(),
+        ...(options.headers || {}),
+      },
+      agent: this.httpsAgent,
+    });
+
+    if (res.status === 401) {
+      this.clearToken();
+      const error = new Error("UNAUTHORIZED");
+      error.status = 401;
+      throw error;
     }
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
+
+  /*
+  ==========================================
+  AUTH
+  ==========================================
+  */
+
+  async login() {
+    const data = await this.request("/user", {
+      method: "POST",
+    });
+
+    this.setToken(data.token);
+
+    return data.user;
+  }
+
+  async checkAuth() {
+    return this.request("/auth", {
+      method: "GET",
+    });
+  }
+
+  /*
+  ==========================================
+  API CALLS
+  ==========================================
+  */
+
+  async fetchQuestion() {
+    return this.request("/question", {
+      method: "POST",
+    });
   }
 
   async sendGivenAnswer(testId, questionId, answer) {
-    try {
-      if (!testId || !questionId || !answer) {
-        throw new Error("Missing parameters for sendGivenAnswer");
-      }
-
-      const res = await fetch(`${this.apiBase}/answer`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ testId, questionId, answer }),
-      });
-
-      if (!res.ok) throw new Error("Failed to send answer");
-      return await res.json();
-    } catch (err) {
-      console.error("sendGivenAnswer() failed:", err);
-      throw err;
-    }
+    return this.request("/test/answer", {
+      method: "POST",
+      body: JSON.stringify({ testId, questionId, answer }),
+    });
   }
 
   async createTest(name) {
-    try {
-      if (!name) throw new Error("Missing test name");
-
-      const res = await fetch(`${this.apiBase}/test`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-
-      if (!res.ok) throw new Error("Failed to create test");
-      return await res.json();
-    } catch (err) {
-      console.error("createTest() failed:", err);
-      throw err;
-    }
+    return this.request("/test", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
   }
 
   async calculateTestResults(id) {
-    try {
-      if (!id) throw new Error("Missing test ID");
-
-      const res = await fetch(`${this.apiBase}/test/results`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-
-      if (!res.ok) throw new Error("Failed to calculate test results");
-      return await res.json();
-    } catch (err) {
-      console.error("calculateTestResults() failed:", err);
-      throw err;
-    }
-  }
-
-  async getUser() {
-    try {
-      const res = await fetch(`${this.apiBase}/user`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!res.ok) throw new Error("Failed to fetch user");
-      return await res.json();
-    } catch (err) {
-      console.error("getUser() failed:", err);
-      throw err;
-    }
+    return this.request("/test/result", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    });
   }
 }
 
 export default new Client();
-export { Client };
