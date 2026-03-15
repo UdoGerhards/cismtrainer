@@ -10,19 +10,23 @@ import Question from '@/components/ui/tst/question';
 import client from '@/scripts/client';
 import { QuestionItem } from '@/scripts/model/if_question';
 
+import { useAuth } from "@/context/AuthContext"; // ⭐ neu
 import { Stack } from "expo-router";
 
 LogBox.ignoreLogs([
   "props.pointerEvents is deprecated"
-]);// 🔥 Wichtig für Header-Titel
+]);
 
 export default function HomeScreen() {
+
+  const { user, loading: authLoading } = useAuth();   // ⭐ neu
+
+  console.log(user);
 
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [checked, setChecked] = useState(false);
 
-  // 🔥 Button-States
   const [nextDisabled, setNextDisabled] = useState(true);
   const [okDisabled, setOkDisabled] = useState(false);
 
@@ -31,7 +35,6 @@ export default function HomeScreen() {
   const loadNextQuestion = () => {
     setLoading(true);
 
-    // 🔥 Buttons zurücksetzen
     setNextDisabled(true);
     setOkDisabled(false);
 
@@ -48,6 +51,16 @@ export default function HomeScreen() {
     loadNextQuestion();
   }, []);
 
+  // 🔐 Auth lädt noch
+  if (authLoading) {
+    return (
+      <ThemedView style={styles.stepContainer}>
+        <ThemedText>Lade Benutzer ...</ThemedText>
+      </ThemedView>
+    );
+  }
+
+  // 📚 Fragen laden
   if (loading) {
     return (
       <ThemedView style={styles.stepContainer}>
@@ -58,7 +71,6 @@ export default function HomeScreen() {
 
   return (
     <>
-      {/* 🔥 Erzwingt den Header-Titel für diesen Screen */}
       <Stack.Screen
         options={{
           title: "Random Question",
@@ -72,26 +84,30 @@ export default function HomeScreen() {
             source={require('@/assets/images/CISMw.png')}
             style={styles.reactLogo}
           />
-        }>
+        }
+      >
 
         <ThemedView style={styles.titleContainer}>
-          <ThemedText type="title">Question!</ThemedText>
+          <ThemedText type="title">
+            Question!
+          </ThemedText>
         </ThemedView>
 
         <Question
           ref={questionRef}
           question={questions}
           checked={checked}
+          user={user}
         />
 
         <ThemedView style={styles.fixToText}>
+
           <Button
             title=" OK "
             disabled={okDisabled}
             onPress={() => {
               client.sendGivenAnswer();
               setChecked(true);
-
               setOkDisabled(true);
               setNextDisabled(false);
             }}
@@ -102,6 +118,7 @@ export default function HomeScreen() {
             onPress={loadNextQuestion}
             disabled={nextDisabled}
           />
+
         </ThemedView>
 
       </ParallaxScrollView>

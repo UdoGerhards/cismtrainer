@@ -9,11 +9,13 @@ function TestComponent(
   {
     question,   // EIN Objekt
     checked,
-    test
+    test,
+    user
   }: {
     question?: QuestionItem,
     checked: boolean,
     test: number
+    user: object
   },
   ref: any
 ) {
@@ -39,6 +41,7 @@ function TestComponent(
         checked={checked}
         questionId={question._id}   // optional, falls Answers das braucht
         test={test}
+        user={user}
       />
     </ThemedView>
   );

@@ -95,6 +95,8 @@ class Client {
       await this.setToken(data.token);
     }
 
+    console.log(JSON.stringify(data));
+
     return data;
   }
 
@@ -116,10 +118,28 @@ class Client {
     });
   }
 
-  async sendGivenAnswer(testId, questionId, answer) {
-    return this.request("/test/answer", {
+  setGivenAnswer(userId, testId, questionId, answerId, correct) {
+    const instance = this;
+    instance.userAnswer = {};
+    instance.userAnswer = {
+      userId,
+      testId,
+      questionId,
+      answerId,
+      correct,
+    };
+
+    console.log(instance.userAnswer);
+  }
+
+  async sendGivenAnswer() {
+    const instance = this;
+
+    console.log("Sending", JSON.stringify(instance.userAnswer));
+
+    return instance.request("/test/answer", {
       method: "POST",
-      body: JSON.stringify({ testId, questionId, answer }),
+      body: JSON.stringify(instance.userAnswer),
     });
   }
 

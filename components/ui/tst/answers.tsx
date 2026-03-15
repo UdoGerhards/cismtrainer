@@ -3,7 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import Checkbox from '@/components/ui/checkbox';
 import { Answer } from "@/scripts/model/if_answer";
 //import TestAnswer from '@/scripts/model/testModel/testAnswer';
-//import client from '@/scripts/tst/client';
+import client from '@/scripts/client';
 import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 
@@ -12,13 +12,15 @@ export default function Answers({
   correct,
   checked,
   questionId,
-  test
+  test,
+  user
 }: {
-  answers: Answer[],
+  answers: [],
   correct: string,
   checked: boolean, 
   questionId: number,
-  test: number
+  test: number,
+  user: object
 }) {
 
   const [selected, setSelected] = useState<string | null>(null);
@@ -27,10 +29,13 @@ export default function Answers({
     if (checked) return; // verhindert erneutes Klicken nach Auswertung
     setSelected(answer._id);
 
-    let res = answer.answer.trim() === correct.trim()?true:false;
-    let testAnswer = new TestAnswer(test, questionId, answer._id, res); 
-    
-    client.setGivenAnswer(testAnswer);
+    let result = answer.answer.trim() === correct.trim()?true:false;
+
+    if (typeof test === "undefined") {
+      test = null;
+    }
+
+    client.setGivenAnswer(user.id, test, questionId, answer._id, result);
   };
 
   return (

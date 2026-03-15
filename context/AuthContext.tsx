@@ -4,9 +4,17 @@ import React, { createContext, useContext, useEffect, useRef, useState } from "r
 import { Platform } from "react-native";
 
 const TOKEN_KEY = "auth_token";
+const USER_KEY = "auth_user";
+
+type User = {
+  id: string;
+  firstname: string;
+  lastname: string;
+};
 
 type AuthContextType = {
   token: string | null;
+  user: User | null;
   loading: boolean;
   login: () => Promise<void>;
   logout: () => Promise<void>;
@@ -15,7 +23,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 //
-// 🔐 Storage Helper
+// Storage Helper
 //
 
 async function getItem(key: string): Promise<string | null> {
@@ -49,12 +57,13 @@ async function deleteItem(key: string) {
 }
 
 //
-// 🔐 Provider
+// Provider
 //
 
 export function AuthProvider({ children }: any) {
 
   const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   const initialized = useRef(false);
@@ -77,10 +86,12 @@ export function AuthProvider({ children }: any) {
     try {
 
       const storedToken = await getItem(TOKEN_KEY);
+      const storedUser = await getItem(USER_KEY);
 
-      if (storedToken) {
+      if (storedToken && storedUser) {
 
         setToken(storedToken);
+        setUser(JSON.parse(storedUser));
         return;
 
       }
@@ -89,21 +100,22 @@ export function AuthProvider({ children }: any) {
 
       const response = await client.login();
 
-      console.log("Login response:", response);
-
-      if (!response?.token) {
-        console.error("Login response missing token");
+      if (!response?.token || !response?.user) {
+        console.error("Login response invalid");
         return;
       }
 
       await setItem(TOKEN_KEY, response.token);
+      await setItem(USER_KEY, JSON.stringify(response.user));
 
       setToken(response.token);
+      setUser(response.user);
 
     } catch (err) {
 
       console.log("Login failed:", err);
       setToken(null);
+      setUser(null);
 
     } finally {
 
@@ -122,15 +134,15 @@ export function AuthProvider({ children }: any) {
 
       const response = await client.login();
 
-      console.log("Login response:", response);
-
-      if (!response?.token) {
-        throw new Error("Login response missing token");
+      if (!response?.token || !response?.user) {
+        throw new Error("Login response invalid");
       }
 
       await setItem(TOKEN_KEY, response.token);
+      await setItem(USER_KEY, JSON.stringify(response.user));
 
       setToken(response.token);
+      setUser(response.user);
 
     } catch (err) {
 
@@ -146,13 +158,15 @@ export function AuthProvider({ children }: any) {
   async function logout() {
 
     await deleteItem(TOKEN_KEY);
+    await deleteItem(USER_KEY);
 
     setToken(null);
+    setUser(null);
 
   }
 
   return (
-    <AuthContext.Provider value={{ token, loading, login, logout }}>
+    <AuthContext.Provider value={{ token, user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

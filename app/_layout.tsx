@@ -1,19 +1,20 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Drawer } from 'expo-router/drawer';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import { Redirect } from "expo-router";
+import { Drawer } from "expo-router/drawer";
+import { StatusBar } from "expo-status-bar";
+import "react-native-reanimated";
 
-import { AuthProvider, useAuth } from '@/context/AuthContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View } from "react-native";
 
 function AppContent() {
 
-  const { loading } = useAuth();
+  const { loading, token } = useAuth();
   const colorScheme = useColorScheme();
 
-  // 🔐 Während AuthContext Token prüft
+  // 🔐 Während AuthContext lädt
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -22,8 +23,14 @@ function AppContent() {
     );
   }
 
+  // ❌ Nicht eingeloggt → Unauthorized Screen
+  if (!token) {
+    return <Redirect href="/unauthorized" />;
+  }
+
+  // ✅ Auth OK → App laden
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
 
       <Drawer
         screenOptions={{
@@ -31,25 +38,20 @@ function AppContent() {
         }}
       >
 
-
         <Drawer.Screen
           name="index"
           options={{
             title: "Performance",
-            headerShown: true,
           }}
         />
 
-        {/* Random Question */}
         <Drawer.Screen
           name="question"
           options={{
             title: "Random question",
-            headerShown: true,
           }}
         />
 
-        {/* CISM Test */}
         <Drawer.Screen
           name="test"
           options={{
@@ -57,10 +59,12 @@ function AppContent() {
           }}
         />
 
+        {/* versteckter Screen */}
         <Drawer.Screen
           name="unauthorized"
           options={{
-            drawerItemStyle: { display: "none" }
+            drawerItemStyle: { display: "none" },
+            headerShown: false
           }}
         />
 
@@ -79,5 +83,4 @@ export default function RootLayout() {
       <AppContent />
     </AuthProvider>
   );
-
 }

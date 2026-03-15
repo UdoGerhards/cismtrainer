@@ -5,20 +5,15 @@ import { useAuth } from "@/context/AuthContext";
 import { Image } from 'expo-image';
 import { StyleSheet } from 'react-native';
 
+
 export default function HomeScreen() {
 
-  const { token, loading } = useAuth();
+  const { token, user, loading } = useAuth();
 
   if (loading) {
     return null;
   }
-
-  /*
-  if (token) {
-    return <Redirect href="/random_question" />;
-  }
-  */
-
+  
   return (
   
     <>
