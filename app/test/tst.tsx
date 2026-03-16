@@ -11,79 +11,118 @@ import Question from '@/components/ui/tst/question';
 import client from '@/scripts/client';
 import { QuestionItem } from '@/scripts/model/if_question';
 
+import { useAuth } from "@/context/AuthContext";
 import { router, useLocalSearchParams } from "expo-router";
 
 export default function HomeScreen() {
 
-  const { testId, questionCount, timeMinutes } = useLocalSearchParams(); 
-  
-  // 🔥 FIFO-Stack
-  const [stack, setStack] = useState<QuestionItem[]>([]);
+  const params = useLocalSearchParams();
+
+  const testId = String(params.testId);
+  const questionCount = Number(params.questionCount);
+
+  const { user } = useAuth();
+
+  const [queue, setQueue] = useState<QuestionItem[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<QuestionItem | null>(null);
-
   const [checked, setChecked] = useState(false);
-
-  // Button-States
-  const [nextDisabled, setNextDisabled] = useState(false);
-  const [okDisabled, setOkDisabled] = useState(false);
 
   const questionRef = useRef(null);
 
   // ---------------------------------------------------------
-  // 🔥 Lädt initial ALLE Fragen in den FIFO-Stack
+  // Fragen laden
   // ---------------------------------------------------------
   useEffect(() => {
-    client.fetchRandom(questionCount)
-      .then(data => {
-        setStack(data);
+
+    console.log(testId);
+
+    client.fetchQuestions(questionCount)
+      .then((data: QuestionItem[]) => {
+
+        if (!data || data.length === 0) return;
+
+        setQueue(data);
         setCurrentQuestion(data[0]);
+
       })
       .catch(err => console.error(err));
+
   }, []);
 
   // ---------------------------------------------------------
-  // 🔥 Holt die nächste Frage aus dem FIFO-Stack (mit Ergebnis-Weiterleitung)
+  // OK → Antwort prüfen
   // ---------------------------------------------------------
-  const loadNextQuestion = () => {
+  const handleOk = async () => {
 
-    setStack(prev => {
-      let newStack;
+    try {
 
-      if (!checked && currentQuestion) {
-        // unbeantwortete Frage hinten anhängen
-        newStack = [...prev.slice(1), currentQuestion];
+      await client.sendGivenAnswer();
+
+      setChecked(true);
+
+    } catch (err) {
+      console.error(err);
+    }
+
+  };
+
+  // ---------------------------------------------------------
+  // Next → nächste Frage
+  // ---------------------------------------------------------
+  const handleNext = () => {
+    
+    setQueue(prev => {
+
+      if (!currentQuestion) return prev;
+
+      let newQueue;
+
+      if (checked) {
+        newQueue = prev.slice(1);
       } else {
-        // beantwortete Frage entfernen
-        newStack = prev.slice(1);
+        newQueue = [...prev.slice(1), currentQuestion];
       }
 
-      // 👉 Wenn der Stack jetzt leer ist → Ergebnis-Seite
-      if (newStack.length === 0) {
+      if (newQueue.length === 0) {
+
+        console.log(testId);
+
         router.replace({
-          pathname: "/ergebnis",
-          params: { testId }
+          pathname: "/test/ergebnis",
+          params: {
+            testId: testId
+          }
         });
+
         return [];
       }
 
-      // neue Frage setzen
-      setCurrentQuestion(newStack[0]);
+      setCurrentQuestion(newQueue[0]);
 
-      return newStack;
+      return newQueue;
     });
 
-    // Buttons zurücksetzen
-    setOkDisabled(false);
     setChecked(false);
+
   };
 
+  // ---------------------------------------------------------
+  // Ladezustand
+  // ---------------------------------------------------------
   if (!currentQuestion) {
     return (
       <ThemedView style={styles.stepContainer}>
-        <ThemedText>Keine Fragen mehr im Stack.</ThemedText>
+        <ThemedText>Lade Fragen...</ThemedText>
       </ThemedView>
     );
   }
+
+  // ---------------------------------------------------------
+  // Button-Logik
+  // ---------------------------------------------------------
+
+  const isLastQuestion = queue.length === 1;
+  const nextDisabled = isLastQuestion && !checked;
 
   return (
     <ParallaxScrollView
@@ -93,39 +132,36 @@ export default function HomeScreen() {
           source={require('@/assets/images/partial-react-logo.png')}
           style={styles.reactLogo}
         />
-      }>
+      }
+    >
 
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
+        <ThemedText type="title">Test</ThemedText>
         <HelloWave />
       </ThemedView>
 
-      {/* 🔥 Neue Übergabe: EIN Question-Objekt */}
       <Question
         ref={questionRef}
         question={currentQuestion}
         checked={checked}
-        test= {testId}
+        test={testId}
+        user={user}
       />
 
       <ThemedView style={styles.fixToText}>
-        <Button
-          title=" OK "
-          disabled={okDisabled}
-          onPress={() => {
-            client.sendGivenAnswer();
-            setChecked(true);
 
-            setOkDisabled(true);
-            setNextDisabled(false);
-          }}
+        <Button
+          title="OK"
+          onPress={handleOk}
+          disabled={checked}
         />
 
         <Button
           title="Next"
-          onPress={loadNextQuestion}
+          onPress={handleNext}
           disabled={nextDisabled}
         />
+
       </ThemedView>
 
     </ParallaxScrollView>
@@ -133,15 +169,21 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
+
   stepContainer: {
     gap: 8,
     marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1
   },
+
   reactLogo: {
     height: 178,
     width: 290,
@@ -149,8 +191,10 @@ const styles = StyleSheet.create({
     left: 0,
     position: 'absolute',
   },
+
   fixToText: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+
 });

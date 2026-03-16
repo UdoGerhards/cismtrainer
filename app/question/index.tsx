@@ -21,8 +21,6 @@ export default function HomeScreen() {
 
   const { user, loading: authLoading } = useAuth();   // ⭐ neu
 
-  console.log(user);
-
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [checked, setChecked] = useState(false);

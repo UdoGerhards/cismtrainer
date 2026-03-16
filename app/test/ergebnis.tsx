@@ -8,9 +8,12 @@ import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet } from 'react-native';
 
+import { useAuth } from "@/context/AuthContext";
+
 
 export default function ErgebnisScreen() {
   const { testId } = useLocalSearchParams();
+    const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState(null);
@@ -18,6 +21,9 @@ export default function ErgebnisScreen() {
   useEffect(() => {
     async function loadResult() {
       try {
+
+        console.log(`Test id: ${testId}`);
+
         const res = await client.calculateTestResults(testId);
         setResult(res);
       } catch (err) {

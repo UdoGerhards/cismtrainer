@@ -56,6 +56,8 @@ class Client {
   async request(url, options = {}) {
     const token = await this.getToken();
 
+    console.log(`${this.apiBase}${url}`);
+
     const res = await fetch(`${this.apiBase}${url}`, {
       ...options,
       headers: {
@@ -118,6 +120,13 @@ class Client {
     });
   }
 
+  async fetchQuestions(number) {
+    return this.request("/questions", {
+      method: "POST",
+      body: JSON.stringify({ number }),
+    });
+  }
+
   setGivenAnswer(userId, testId, questionId, answerId, correct) {
     const instance = this;
     instance.userAnswer = {};
@@ -128,14 +137,10 @@ class Client {
       answerId,
       correct,
     };
-
-    console.log(instance.userAnswer);
   }
 
   async sendGivenAnswer() {
     const instance = this;
-
-    console.log("Sending", JSON.stringify(instance.userAnswer));
 
     return instance.request("/test/answer", {
       method: "POST",
@@ -143,10 +148,10 @@ class Client {
     });
   }
 
-  async createTest(name) {
+  async createTest(userId, name) {
     return this.request("/test", {
       method: "POST",
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ userId, name }),
     });
   }
 

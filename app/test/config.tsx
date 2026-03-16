@@ -7,6 +7,7 @@ import { Button, StyleSheet, TextInput } from "react-native";
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useAuth } from "@/context/AuthContext"; // ⭐ neu
 import { Image } from 'expo-image';
 
 export default function ConfigScreen() {
@@ -14,15 +15,19 @@ export default function ConfigScreen() {
   const [questionCount, setQuestionCount] = useState("");
   const [timeMinutes, setTimeMinutes] = useState("");
   const [timerEnabled, setTimerEnabled] = useState(false);
+  const { user} = useAuth();   //
 
   const startTest = () => {
 
-    client.createTest(title)
+    const userId = user?.id;
+
+    client.createTest(userId, title)
       .then(result => {
-        let testId = result.insertedId;
+
+        let testId = result._id;
 
         router.push({
-          pathname: "/(tst)/tst",
+          pathname: "/test/tst",
           params: {
             testId,
             questionCount,
