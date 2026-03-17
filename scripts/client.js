@@ -1,12 +1,15 @@
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
+import conf from "../log4js.json";
+
 const TOKEN_KEY = "auth_token";
 
 class Client {
   constructor() {
     this.apiBase = "https://localhost/api";
     this.token = null;
+    this.conf = conf;
   }
 
   /*

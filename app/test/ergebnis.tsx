@@ -22,9 +22,8 @@ export default function ErgebnisScreen() {
     async function loadResult() {
       try {
 
-        console.log(`Test id: ${testId}`);
-
         const res = await client.calculateTestResults(testId);
+
         setResult(res);
       } catch (err) {
         console.error(err);
