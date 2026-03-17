@@ -1,5 +1,5 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
-import { Redirect } from "expo-router";
+import { Redirect, router } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
@@ -38,6 +38,7 @@ function AppContent() {
         }}
       >
 
+        {/* Performance */}
         <Drawer.Screen
           name="index"
           options={{
@@ -45,6 +46,7 @@ function AppContent() {
           }}
         />
 
+        {/* Random Question */}
         <Drawer.Screen
           name="question"
           options={{
@@ -52,14 +54,38 @@ function AppContent() {
           }}
         />
 
+        {/* 🔥 WICHTIG: test Stack ROOT verstecken */}
         <Drawer.Screen
           name="test"
           options={{
             title: "CISM Test",
           }}
+          listeners={{
+            drawerItemPress: (e) => {
+              e.preventDefault();
+
+              // 🔥 erzwingt Reset auf Config
+              router.replace("/test/config");
+            },
+          }}
         />
 
-        {/* versteckter Screen */}
+        {/* versteckte Screens */}
+        <Drawer.Screen
+          name="test/tst"
+          options={{
+            drawerItemStyle: { display: "none" },
+          }}
+        />
+
+        <Drawer.Screen
+          name="test/ergebnis"
+          options={{
+            drawerItemStyle: { display: "none" },
+          }}
+        />
+
+        {/* Unauthorized */}
         <Drawer.Screen
           name="unauthorized"
           options={{
@@ -77,7 +103,6 @@ function AppContent() {
 }
 
 export default function RootLayout() {
-
   return (
     <AuthProvider>
       <AppContent />

@@ -1,5 +1,3 @@
-import client from '@/scripts/client';
-
 import { router } from "expo-router";
 import { useState } from "react";
 import { Button, StyleSheet, TextInput } from "react-native";
@@ -7,38 +5,33 @@ import { Button, StyleSheet, TextInput } from "react-native";
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useAuth } from "@/context/AuthContext"; // ⭐ neu
 import { Image } from 'expo-image';
 
 export default function ConfigScreen() {
+
   const [title, setTitle] = useState("");
   const [questionCount, setQuestionCount] = useState("");
   const [timeMinutes, setTimeMinutes] = useState("");
-  const [timerEnabled, setTimerEnabled] = useState(false);
-  const { user} = useAuth();   //
 
+  // ---------------------------------------------------------
+  // Start Test (nur Navigation!)s
+  // ---------------------------------------------------------
   const startTest = () => {
 
-    const userId = user?.id;
+    // einfache Defaults / Absicherung
+    const safeTitle = title || "CISM Test";
+    const safeQuestionCount = Number(questionCount) || 20;
+    const safeTimeMinutes = Number(timeMinutes) || 0;
 
-    client.createTest(userId, title)
-      .then(result => {
-
-        let testId = result._id;
-
-        router.push({
-          pathname: "/test/tst",
-          params: {
-            testId,
-            questionCount,
-            timeMinutes
-          },
-        });
-      })
-      .catch(err => {
-        // Fehler → Abbruch
-        console.error(err);
-      });
+    router.push({
+      pathname: "/test/tst",
+      params: {
+        title: safeTitle,
+        questionCount: safeQuestionCount.toString(),
+        timeMinutes: safeTimeMinutes.toString(),
+        ts: Date.now(), 
+      },
+    });
   };
 
   return (
@@ -49,9 +42,11 @@ export default function ConfigScreen() {
           source={require('@/assets/images/partial-react-logo.png')}
           style={styles.reactLogo}
         />
-      }>
+      }
+    >
       <ThemedView style={styles.container}>
-        <ThemedText style={styles.label}>Titel</ThemedText >
+
+        <ThemedText style={styles.label}>Titel</ThemedText>
         <TextInput
           value={title}
           onChangeText={setTitle}
@@ -59,7 +54,7 @@ export default function ConfigScreen() {
           style={styles.input}
         />
 
-        <ThemedText style={styles.label}>Anzahl Fragen</ThemedText >
+        <ThemedText style={styles.label}>Anzahl Fragen</ThemedText>
         <TextInput
           value={questionCount}
           onChangeText={setQuestionCount}
@@ -68,7 +63,7 @@ export default function ConfigScreen() {
           style={styles.input}
         />
 
-        <ThemedText style={styles.label}>Zeit (Minuten)</ThemedText >
+        <ThemedText style={styles.label}>Zeit (Minuten)</ThemedText>
         <TextInput
           value={timeMinutes}
           onChangeText={setTimeMinutes}
@@ -80,7 +75,8 @@ export default function ConfigScreen() {
         <ThemedView style={styles.fixToText}>
           <Button title="Test starten" onPress={startTest} />
         </ThemedView>
-      </ThemedView >
+
+      </ThemedView>
     </ParallaxScrollView>
   );
 }
@@ -99,11 +95,6 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     padding: 8,
     borderRadius: 6,
-  },
-  switchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
   },
   fixToText: {
     flexDirection: 'row',

@@ -14,63 +14,122 @@ import { QuestionItem } from '@/scripts/model/if_question';
 import { useAuth } from "@/context/AuthContext";
 import { router, useLocalSearchParams } from "expo-router";
 
-export default function HomeScreen() {
-
-  const params = useLocalSearchParams();
-
-  const testId = String(params.testId);
-  const questionCount = Number(params.questionCount);
+export default function TestScreen() {
 
   const { user } = useAuth();
 
+  // ---------------------------------------------------------
+  // Params von config.tsx
+  // ---------------------------------------------------------
+  const params = useLocalSearchParams();
+
+  const title = String(params.title);
+  const questionCount = Number(params.questionCount);
+  const timeMinutes = Number(params.timeMinutes);
+
+  // ❗ wird jetzt NEU erzeugt
+  const [testId, setTestId] = useState<string | null>(null);
+
+  // ---------------------------------------------------------
+  // State
+  // ---------------------------------------------------------
   const [queue, setQueue] = useState<QuestionItem[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<QuestionItem | null>(null);
   const [checked, setChecked] = useState(false);
 
+  const [timeLeft, setTimeLeft] = useState(timeMinutes * 60);
+
   const questionRef = useRef(null);
 
   // ---------------------------------------------------------
-  // Fragen laden
+  // 🆕 Test erstellen + Fragen laden
   // ---------------------------------------------------------
   useEffect(() => {
 
-    console.log(testId);
+    const initTest = async () => {
+      try {
+        // 🔥 NEUER Test bei JEDEM Eintritt
+        const result = await client.createTest(user?.id, title);
+        const newTestId = result._id;
 
-    client.fetchQuestions(questionCount)
-      .then((data: QuestionItem[]) => {
+        console.log("Neuer Test erstellt:", newTestId);
+
+        setTestId(newTestId);
+
+        // Fragen laden
+        const data: QuestionItem[] = await client.fetchQuestions(questionCount);
 
         if (!data || data.length === 0) return;
 
         setQueue(data);
         setCurrentQuestion(data[0]);
 
-      })
-      .catch(err => console.error(err));
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    initTest();
 
   }, []);
 
   // ---------------------------------------------------------
-  // OK → Antwort prüfen
+  // ⏱ Timer
   // ---------------------------------------------------------
-  const handleOk = async () => {
+  useEffect(() => {
 
-    try {
+    if (!timeMinutes) return;
 
-      await client.sendGivenAnswer();
+    const interval = setInterval(() => {
+      setTimeLeft(prev => {
 
-      setChecked(true);
+        if (prev <= 1) {
+          clearInterval(interval);
 
-    } catch (err) {
-      console.error(err);
-    }
+          if (testId) {
+            router.replace({
+              pathname: "/test/ergebnis",
+              params: { testId }
+            });
+          }
 
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+
+  }, [testId]);
+
+  // ---------------------------------------------------------
+  // Zeit formatieren
+  // ---------------------------------------------------------
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
   // ---------------------------------------------------------
-  // Next → nächste Frage
+  // OK
+  // ---------------------------------------------------------
+  const handleOk = async () => {
+    try {
+      await client.sendGivenAnswer();
+      setChecked(true);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // ---------------------------------------------------------
+  // Next
   // ---------------------------------------------------------
   const handleNext = () => {
-    
+
     setQueue(prev => {
 
       if (!currentQuestion) return prev;
@@ -83,15 +142,11 @@ export default function HomeScreen() {
         newQueue = [...prev.slice(1), currentQuestion];
       }
 
-      if (newQueue.length === 0) {
-
-        console.log(testId);
+      if (newQueue.length === 0 && testId) {
 
         router.replace({
           pathname: "/test/ergebnis",
-          params: {
-            testId: testId
-          }
+          params: { testId }
         });
 
         return [];
@@ -103,24 +158,22 @@ export default function HomeScreen() {
     });
 
     setChecked(false);
-
   };
 
   // ---------------------------------------------------------
   // Ladezustand
   // ---------------------------------------------------------
-  if (!currentQuestion) {
+  if (!currentQuestion || !testId) {
     return (
       <ThemedView style={styles.stepContainer}>
-        <ThemedText>Lade Fragen...</ThemedText>
+        <ThemedText>Lade Test...</ThemedText>
       </ThemedView>
     );
   }
 
   // ---------------------------------------------------------
-  // Button-Logik
+  // UI
   // ---------------------------------------------------------
-
   const isLastQuestion = queue.length === 1;
   const nextDisabled = isLastQuestion && !checked;
 
@@ -136,8 +189,13 @@ export default function HomeScreen() {
     >
 
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Test</ThemedText>
+        <ThemedText type="title">{title}</ThemedText>
         <HelloWave />
+        {timeMinutes > 0 && (
+          <ThemedText style={styles.timer}>
+            ⏱ {formatTime(timeLeft)}
+          </ThemedText>
+        )}
       </ThemedView>
 
       <Question
@@ -149,19 +207,8 @@ export default function HomeScreen() {
       />
 
       <ThemedView style={styles.fixToText}>
-
-        <Button
-          title="OK"
-          onPress={handleOk}
-          disabled={checked}
-        />
-
-        <Button
-          title="Next"
-          onPress={handleNext}
-          disabled={nextDisabled}
-        />
-
+        <Button title="OK" onPress={handleOk} disabled={checked} />
+        <Button title="Next" onPress={handleNext} disabled={nextDisabled} />
       </ThemedView>
 
     </ParallaxScrollView>
@@ -169,13 +216,16 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
+    justifyContent: 'space-between'
   },
-
+  timer: {
+    fontSize: 16,
+    fontWeight: 'bold'
+  },
   stepContainer: {
     gap: 8,
     marginBottom: 8,
@@ -183,7 +233,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flex: 1
   },
-
   reactLogo: {
     height: 178,
     width: 290,
@@ -191,10 +240,8 @@ const styles = StyleSheet.create({
     left: 0,
     position: 'absolute',
   },
-
   fixToText: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-
 });

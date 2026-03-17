@@ -164,6 +164,41 @@ class Client {
       body: JSON.stringify({ id }),
     });
   }
+
+  async getPerformance(id) {
+    const performanceList = await this.request("/test/performance", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    });
+
+    const overAll = {
+      list: performanceList,
+      total: {
+        questions: 0,
+        correct: 0,
+        wrong: 0,
+        percentage: 0,
+        ratio: 0,
+      },
+    };
+
+    performanceList.map((testResult) => {
+      overAll.total.questions += testResult.totalQuestions;
+      overAll.total.correct += testResult.correct;
+      overAll.total.wrong += testResult.wrong;
+    });
+
+    if (overAll.list.length > 0) {
+      //overAll.total.ratio = Math.round((overAll.total.correct / overAll.total.wrong) * 100) / 100;
+
+      overAll.total.ratio = Number(
+        (overAll.total.correct / overAll.total.wrong).toFixed(2),
+      );
+      overAll.total.percentage = overAll.total.ratio * 100;
+    }
+
+    return overAll;
+  }
 }
 
 export default new Client();
