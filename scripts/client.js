@@ -165,6 +165,20 @@ class Client {
     });
   }
 
+  async getTestById(id) {
+    return this.request("/test/with/answers", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    });
+  }
+
+  async getTestEvaluation(id) {
+    return this.request("/test/evaluation", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    });
+  }
+
   async getPerformance(id) {
     const performanceList = await this.request("/test/performance", {
       method: "POST",
