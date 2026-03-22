@@ -213,6 +213,13 @@ class Client {
 
     return overAll;
   }
+
+  async getExplanation(questionId) {
+    return this.request("/explain", {
+      method: "POST",
+      body: JSON.stringify({ questionId }),
+    });
+  }
 }
 
 export default new Client();
