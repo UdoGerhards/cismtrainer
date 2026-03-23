@@ -207,7 +207,9 @@ export default function TestScreen() {
       />
 
       <ThemedView style={styles.fixToText}>
-        <Button title="OK" onPress={handleOk} disabled={checked} />
+        {!checked && (
+          <Button title="OK" onPress={handleOk} disabled={checked} />
+        )}
         <Button title="Next" onPress={handleNext} disabled={nextDisabled} />
       </ThemedView>
 

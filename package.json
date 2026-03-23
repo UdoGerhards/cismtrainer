@@ -50,6 +50,7 @@
     "react-native-worklets": "0.5.1",
     "react-test-renderer": "^19.2.4",
     "recharts": "^3.7.0",
+    "remark-gfm": "^4.0.1",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

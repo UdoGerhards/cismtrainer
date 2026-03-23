@@ -2,12 +2,12 @@ import Pie from "@/components/charts/pie.chart";
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import ExplanationBox from "@/components/ui/tst/explanationBox";
 import client from "@/scripts/client";
 import { Image } from 'expo-image';
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet } from 'react-native';
+import { FlatList, Pressable, StyleSheet } from 'react-native';
 
 import { useAuth } from "@/context/AuthContext";
 
@@ -181,48 +181,13 @@ export default function ErgebnisScreen() {
               </ThemedView>
 
               {/* Erklärung */}
-              {isExpanded && (
-                <ThemedView style={styles.explanationBox}>
-                  {loadingExplanation === item._id ? (
-                    <ActivityIndicator />
-                  ) : (
-                    <ReactMarkdown
-                      components={{
-                        h3: ({ children }) => (
-                          <ThemedText style={styles.mdH3}>{children}</ThemedText>
-                        ),
-                        h4: ({ children }) => (
-                          <ThemedText style={styles.mdH4}>{children}</ThemedText>
-                        ),
-                        p: ({ children }) => (
-                          <ThemedText style={styles.mdP}>{children}</ThemedText>
-                        ),
-                        ul: ({ children }) => (
-                          <ThemedView style={styles.mdUl}>{children}</ThemedView>
-                        ),
-                        li: ({ children }) => {
-                          const text = Array.isArray(children)
-                            ? children.join("").trim()
-                            : String(children).trim();
-                          if (!text) return null;
-
-                          return (
-                            <ThemedView style={styles.mdLiRow}>
-                              <ThemedText style={styles.mdBullet}>•</ThemedText>
-                              <ThemedText style={styles.mdLiText}>{children}</ThemedText>
-                            </ThemedView>
-                          );
-                        },
-                        strong: ({ children }) => (
-                          <ThemedText style={styles.mdStrong}>{children}</ThemedText>
-                        ),
-                      }}
-                    >
-                      {explanations[item._id]}
-                    </ReactMarkdown>
-                  )}
-                </ThemedView>
-              )}
+              <ExplanationBox
+                isExpanded={isExpanded}
+                loadingExplanation={loadingExplanation}
+                itemId={item._id}
+                explanations={explanations}
+                styles={styles}
+              />
             </Pressable>
           );
         }}
