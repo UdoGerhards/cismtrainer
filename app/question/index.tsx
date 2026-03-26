@@ -91,7 +91,7 @@ export default function HomeScreen() {
         headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
         headerImage={
           <Image
-            source={require('@/assets/images/CISMw.png')}
+          source={require('@/assets/images/CISM_logo_RGB-1024x409.png')}
             style={styles.reactLogo}
           />
         }
@@ -195,8 +195,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   reactLogo: {
-    height: 200,
-    width: 290,
+    height: 163,
+    width: 408,
+    marginTop:40,
+    marginLeft:30
   },
   fixToText: {
     flexDirection: 'row',
