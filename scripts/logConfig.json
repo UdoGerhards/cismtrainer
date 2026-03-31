@@ -1,0 +1,22 @@
+{
+  "appenders": {
+    "default": {
+      "type": "stdout",
+      "pattern": "-yyyy-MM-dd"
+    },
+
+    "defaultFile": {
+      "type": "file",
+      "pattern": "-yyyy-MM-dd",
+      "filename": "/var/log/cismtrainer/default.log"
+    }
+  },
+
+  "categories": {
+    "default": {
+      "appenders": ["defaultFile"],
+      "level": "INFO",
+      "enableCallStack": false
+    }
+  }
+}

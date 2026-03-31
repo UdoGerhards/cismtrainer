@@ -1,5 +1,5 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
-import { Redirect, router } from "expo-router";
+import { router, useSegments } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
@@ -7,14 +7,30 @@ import "react-native-reanimated";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
+import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 
 function AppContent() {
-
   const { loading, token } = useAuth();
   const colorScheme = useColorScheme();
+  const segments = useSegments();
 
-  // 🔐 Während AuthContext lädt
+  const first = segments[0];
+  const inLogin = first === "login";
+  const inRegistration = first === "registration";
+
+  useEffect(() => {
+    if (loading) return;
+
+    if (!token && !inLogin && !inRegistration) {
+      router.replace("/login");
+    }
+
+    if (token && (inLogin || inRegistration)) {
+      router.replace("/");
+    }
+  }, [token, loading, segments]);
+
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -23,81 +39,64 @@ function AppContent() {
     );
   }
 
-  // ❌ Nicht eingeloggt → Unauthorized Screen
-  if (!token) {
-    return <Redirect href="/unauthorized" />;
+  if (!token && !inLogin && !inRegistration) {
+    return null;
   }
 
-  // ✅ Auth OK → App laden
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-
-      <Drawer
-        screenOptions={{
-          headerTitle: "",
-        }}
-      >
-
-        {/* Performance */}
+      <Drawer screenOptions={{ headerTitle: "" }}>
+        
         <Drawer.Screen
           name="index"
-          options={{
-            title: "Performance",
-          }}
+          options={{ title: "performance" }}
         />
 
-        {/* Random Question */}
         <Drawer.Screen
           name="question"
-          options={{
-            title: "Random question",
-          }}
+          options={{ title: "Random question" }}
         />
 
-        {/* 🔥 WICHTIG: test Stack ROOT verstecken */}
         <Drawer.Screen
           name="test"
-          options={{
-            title: "CISM Test",
-          }}
+          options={{ title: "CISM Test" }}
           listeners={{
             drawerItemPress: (e) => {
               e.preventDefault();
-
-              // 🔥 erzwingt Reset auf Config
               router.replace("/test/config");
             },
           }}
         />
 
-        {/* versteckte Screens */}
         <Drawer.Screen
           name="test/tst"
-          options={{
-            drawerItemStyle: { display: "none" },
-          }}
+          options={{ drawerItemStyle: { display: "none" } }}
         />
 
         <Drawer.Screen
           name="test/ergebnis"
+          options={{ drawerItemStyle: { display: "none" } }}
+        />
+
+        <Drawer.Screen
+          name="login"
           options={{
             drawerItemStyle: { display: "none" },
+            headerShown: false,
           }}
         />
 
-        {/* Unauthorized */}
         <Drawer.Screen
-          name="unauthorized"
+          name="registration"
           options={{
             drawerItemStyle: { display: "none" },
-            headerShown: false
+            headerShown: false,
           }}
         />
 
       </Drawer>
 
       <StatusBar style="auto" />
-
     </ThemeProvider>
   );
 }

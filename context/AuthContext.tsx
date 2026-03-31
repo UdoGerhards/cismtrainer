@@ -1,4 +1,5 @@
 import client from "@/scripts/client";
+import { useRouter, useSegments } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
@@ -16,52 +17,37 @@ type AuthContextType = {
   token: string | null;
   user: User | null;
   loading: boolean;
-  login: () => Promise<void>;
+  login: (username?: string, password?: string) => Promise<boolean>;
   logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-//
-// Storage Helper
-//
-
 async function getItem(key: string): Promise<string | null> {
-
   if (Platform.OS === "web") {
     if (typeof window === "undefined") return null;
     return localStorage.getItem(key);
   }
-
   return SecureStore.getItemAsync(key);
 }
 
 async function setItem(key: string, value: string) {
-
   if (Platform.OS === "web") {
     localStorage.setItem(key, value);
     return;
   }
-
   await SecureStore.setItemAsync(key, value);
 }
 
 async function deleteItem(key: string) {
-
   if (Platform.OS === "web") {
     localStorage.removeItem(key);
     return;
   }
-
   await SecureStore.deleteItemAsync(key);
 }
 
-//
-// Provider
-//
-
 export function AuthProvider({ children }: any) {
-
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,73 +55,46 @@ export function AuthProvider({ children }: any) {
   const initialized = useRef(false);
 
   useEffect(() => {
-
     if (initialized.current) return;
     initialized.current = true;
-
     init();
-
   }, []);
 
-  //
-  // Init
-  //
-
   async function init() {
-
     try {
-
       const storedToken = await getItem(TOKEN_KEY);
-      const storedUser = await getItem(USER_KEY);
 
-      if (storedToken && storedUser) {
+      if (storedToken) {
+        try {
+          const me = await client.me(storedToken);
 
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        return;
+          if (me?.user) {
+            setToken(storedToken);
+            setUser(me.user);
+            return;
+          }
 
+          throw new Error("Token invalid");
+        } catch {
+          await deleteItem(TOKEN_KEY);
+          await deleteItem(USER_KEY);
+        }
       }
 
-      console.log("No token found → logging in");
-
-      const response = await client.login();
-
-      if (!response?.token || !response?.user) {
-        console.error("Login response invalid");
-        return;
-      }
-
-      await setItem(TOKEN_KEY, response.token);
-      await setItem(USER_KEY, JSON.stringify(response.user));
-
-      setToken(response.token);
-      setUser(response.user);
-
-    } catch (err) {
-
-      console.log("Login failed:", err);
       setToken(null);
       setUser(null);
 
     } finally {
-
       setLoading(false);
-
     }
   }
 
-  //
-  // Login
-  //
-
-  async function login() {
-
+  async function login(username?: string, password?: string): Promise<boolean> {
     try {
-
-      const response = await client.login();
+      const response = await client.login(username, password);
 
       if (!response?.token || !response?.user) {
-        throw new Error("Login response invalid");
+        return false;
       }
 
       await setItem(TOKEN_KEY, response.token);
@@ -144,43 +103,58 @@ export function AuthProvider({ children }: any) {
       setToken(response.token);
       setUser(response.user);
 
-    } catch (err) {
-
-      console.log("Login error:", err);
-
+      return true;
+    } catch {
+      return false;
     }
   }
 
-  //
-  // Logout
-  //
-
   async function logout() {
-
     await deleteItem(TOKEN_KEY);
     await deleteItem(USER_KEY);
 
     setToken(null);
     setUser(null);
-
   }
 
   return (
     <AuthContext.Provider value={{ token, user, loading, login, logout }}>
+      <AuthGuard />
       {children}
     </AuthContext.Provider>
   );
 }
 
-//
-// Hook
-//
+function AuthGuard() {
+  const { token, loading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+
+    console.log(loading);
+
+    if (loading) return;
+
+    const first = segments[0];
+
+    console.log(first);
+
+
+    if (!token && first !== "login" && first !== "registration") {
+      router.replace("/login");
+    }
+
+    if (token && (first === "login" || first === "registration")) {
+      router.replace("/");
+    }
+  }, [token, loading, segments]);
+
+  return null;
+}
 
 export function useAuth() {
-
   const ctx = useContext(AuthContext);
-
   if (!ctx) throw new Error("AuthContext missing");
-
   return ctx;
 }

@@ -1,16 +1,50 @@
+import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 import conf from "../log4js.json";
+import Base from "./foundation/Base.js";
 
 const TOKEN_KEY = "auth_token";
 
-class Client {
+class Client extends Base {
   constructor() {
-    this.apiBase = "https://localhost/api";
-    this.token = null;
-    this.conf = conf;
+    super();
+    const instance = this;
+
+    instance.apiBase = instance.getApiBase();
+    instance.token = null;
+    instance.conf = conf;
+
+    console.log("API BASE:", instance.apiBase);
   }
+
+  /*
+  ==========================================
+  API BASE
+  ==========================================
+  */
+
+  getApiBase() {
+    if (Platform.OS === "web") {
+      return "http://localhost/api";
+    }
+
+    const hostUri = Constants.expoConfig?.hostUri;
+
+    if (hostUri) {
+      const host = hostUri.split(":")[0];
+      return `http://${host}/api`;
+    }
+
+    if (Platform.OS === "android") {
+      return "http://10.0.2.2/api";
+    }
+
+    return "http://localhost/api";
+  }
+
+  init() {}
 
   /*
   ==========================================
@@ -21,7 +55,6 @@ class Client {
   async getToken() {
     if (Platform.OS === "web") {
       if (typeof window === "undefined") return null;
-
       return localStorage.getItem(TOKEN_KEY);
     }
 
@@ -59,16 +92,24 @@ class Client {
   async request(url, options = {}) {
     const token = await this.getToken();
 
-    console.log(`${this.apiBase}${url}`);
+    const fullUrl = `${this.apiBase}${url}`;
+    console.log("REQUEST:", fullUrl);
 
-    const res = await fetch(`${this.apiBase}${url}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options.headers || {}),
-      },
-    });
+    let res;
+
+    try {
+      res = await fetch(fullUrl, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(options.headers || {}),
+        },
+      });
+    } catch (e) {
+      console.log("FETCH ERROR:", e);
+      throw e;
+    }
 
     if (res.status === 401) {
       await this.clearToken();
@@ -91,23 +132,65 @@ class Client {
   ==========================================
   */
 
-  async login() {
-    const data = await this.request("/user", {
-      method: "POST",
-    });
+  // 🔐 Login (mTLS oder Mobile)
+  async login(email, password) {
+    try {
+      const body = email && password ? { email, password } : {};
 
-    if (data?.token) {
-      await this.setToken(data.token);
+      const data = await this.request("/user", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      if (data?.token) {
+        await this.setToken(data.token);
+      }
+
+      return data;
+    } catch (error) {
+      console.log("LOGIN ERROR FULL:", error?.message, error);
+      throw error;
     }
-
-    console.log(JSON.stringify(data));
-
-    return data;
   }
 
-  async checkAuth() {
-    return this.request("/auth", {
-      method: "GET",
+  // 🔐 Token validieren (angepasst an dein Backend)
+  async me(token) {
+    try {
+      const res = await fetch(`${this.apiBase}/auth`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.status === 401) {
+        throw new Error("UNAUTHORIZED");
+      }
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      return {
+        user: {
+          id: data.user.id,
+          firstname: data.user.firstname,
+          lastname: data.user.lastname,
+        },
+      };
+    } catch (err) {
+      console.log("ME ERROR:", err);
+      throw err;
+    }
+  }
+
+  async fetchUserByEmail(email) {
+    return this.request("/user/by/email", {
+      method: "POST",
+      body: JSON.stringify({ email }),
     });
   }
 
@@ -131,9 +214,7 @@ class Client {
   }
 
   setGivenAnswer(userId, testId, questionId, answerId, correct) {
-    const instance = this;
-    instance.userAnswer = {};
-    instance.userAnswer = {
+    this.userAnswer = {
       userId,
       testId,
       questionId,
@@ -143,11 +224,9 @@ class Client {
   }
 
   async sendGivenAnswer() {
-    const instance = this;
-
-    return instance.request("/test/answer", {
+    return this.request("/test/answer", {
       method: "POST",
-      body: JSON.stringify(instance.userAnswer),
+      body: JSON.stringify(this.userAnswer),
     });
   }
 
@@ -196,15 +275,13 @@ class Client {
       },
     };
 
-    performanceList.map((testResult) => {
+    performanceList.forEach((testResult) => {
       overAll.total.questions += testResult.totalQuestions;
       overAll.total.correct += testResult.correct;
       overAll.total.wrong += testResult.wrong;
     });
 
-    if (overAll.list.length > 0) {
-      //overAll.total.ratio = Math.round((overAll.total.correct / overAll.total.wrong) * 100) / 100;
-
+    if (overAll.list.length > 0 && overAll.total.wrong > 0) {
       overAll.total.ratio = Number(
         (overAll.total.correct / overAll.total.wrong).toFixed(2),
       );

@@ -1,5 +1,4 @@
 import Pie from "@/components/charts/pie.chart";
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import ExplanationBox from "@/components/ui/tst/explanationBox";
@@ -96,102 +95,101 @@ export default function ErgebnisScreen() {
       : evaluation.wrongQuestions || [];
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/CISM_logo_RGB-1024x409.png')}
-          style={styles.reactLogo}
-        />
-      }
-    >
-      {/* HEADER */}
-      <ThemedView>
-        <Pie data={pieData} />
-      </ThemedView>
+    <FlatList
+      data={currentData}
+      keyExtractor={(item) => item._id}
 
-      {/* TABS */}
-      <ThemedView style={styles.tabsWrapper}>
-        <ThemedView style={styles.tabsRow}>
+      ListHeaderComponent={
+        <>
+          {/* LOGO */}
+          <Image
+            source={require('@/assets/images/CISM_logo_RGB-1024x409.png')}
+            style={styles.reactLogo}
+          />
 
-          <Pressable onPress={() => setActiveTab("correct")} style={styles.tabItem}>
-            <ThemedText style={[
-              styles.tabText,
-              activeTab === "correct" && styles.activeTabText
-            ]}>
-              CORRECT
-            </ThemedText>
-            {activeTab === "correct" && <ThemedView style={styles.tabUnderline} />}
-          </Pressable>
+          {/* CHART */}
+          <ThemedView>
+            <Pie data={pieData} />
+          </ThemedView>
 
-          <Pressable onPress={() => setActiveTab("wrong")} style={styles.tabItem}>
-            <ThemedText style={[
-              styles.tabText,
-              activeTab === "wrong" && styles.activeTabText
-            ]}>
-              WRONG
-            </ThemedText>
-            {activeTab === "wrong" && <ThemedView style={styles.tabUnderline} />}
-          </Pressable>
+          {/* TABS */}
+          <ThemedView style={styles.tabsWrapper}>
+            <ThemedView style={styles.tabsRow}>
 
-        </ThemedView>
-
-        <ThemedView style={styles.tabDivider} />
-      </ThemedView>
-
-      {/* LISTE */}
-      <FlatList
-        data={currentData}
-        keyExtractor={(item) => item._id}
-        renderItem={({ item }) => {
-          const correctText = getCorrectAnswerText(item.answers, item.correct);
-          const userText = item.user;
-          const isCorrect = userText?.trim() === correctText?.trim();
-          const isExpanded = expandedId === item._id;
-
-          return (
-            <Pressable
-              onPress={() => handlePress(item)}
-              style={({ hovered, pressed }) => [
-                styles.listItem,
-                hovered && styles.hovered,
-                pressed && styles.pressed
-              ]}
-            >
-              <ThemedText style={styles.question}>
-                {item.question}
-              </ThemedText>
-
-              <ThemedView style={styles.row}>
-                <ThemedText style={styles.label}>Answer:</ThemedText>
-                <ThemedText style={[styles.text, styles.correct]}>
-                  {correctText}
-                </ThemedText>
-              </ThemedView>
-
-              <ThemedView style={styles.row}>
-                <ThemedText style={styles.label}>User:</ThemedText>
+              <Pressable onPress={() => setActiveTab("correct")} style={styles.tabItem}>
                 <ThemedText style={[
-                  styles.text,
-                  { color: isCorrect ? "green" : "red" }
+                  styles.tabText,
+                  activeTab === "correct" && styles.activeTabText
                 ]}>
-                  {userText}
+                  CORRECT
                 </ThemedText>
-              </ThemedView>
+                {activeTab === "correct" && <ThemedView style={styles.tabUnderline} />}
+              </Pressable>
 
-              {/* Erklärung */}
-              <ExplanationBox
-                isExpanded={isExpanded}
-                loadingExplanation={loadingExplanation}
-                itemId={item._id}
-                explanations={explanations}
-                styles={styles}
-              />
-            </Pressable>
-          );
-        }}
-      />
-    </ParallaxScrollView>
+              <Pressable onPress={() => setActiveTab("wrong")} style={styles.tabItem}>
+                <ThemedText style={[
+                  styles.tabText,
+                  activeTab === "wrong" && styles.activeTabText
+                ]}>
+                  WRONG
+                </ThemedText>
+                {activeTab === "wrong" && <ThemedView style={styles.tabUnderline} />}
+              </Pressable>
+
+            </ThemedView>
+
+            <ThemedView style={styles.tabDivider} />
+          </ThemedView>
+        </>
+      }
+
+      renderItem={({ item }) => {
+        const correctText = getCorrectAnswerText(item.answers, item.correct);
+        const userText = item.user;
+        const isCorrect = userText?.trim() === correctText?.trim();
+        const isExpanded = expandedId === item._id;
+
+        return (
+          <Pressable
+            onPress={() => handlePress(item)}
+            style={({ hovered, pressed }) => [
+              styles.listItem,
+              hovered && styles.hovered,
+              pressed && styles.pressed
+            ]}
+          >
+            <ThemedText style={styles.question}>
+              {item.question}
+            </ThemedText>
+
+            <ThemedView style={styles.row}>
+              <ThemedText style={styles.label}>Answer:</ThemedText>
+              <ThemedText style={[styles.text, styles.correct]}>
+                {correctText}
+              </ThemedText>
+            </ThemedView>
+
+            <ThemedView style={styles.row}>
+              <ThemedText style={styles.label}>User:</ThemedText>
+              <ThemedText style={[
+                styles.text,
+                { color: isCorrect ? "green" : "red" }
+              ]}>
+                {userText}
+              </ThemedText>
+            </ThemedView>
+
+            <ExplanationBox
+              isExpanded={isExpanded}
+              loadingExplanation={loadingExplanation}
+              itemId={item._id}
+              explanations={explanations}
+              styles={styles}
+            />
+          </Pressable>
+        );
+      }}
+    />
   );
 }
 
@@ -199,8 +197,8 @@ const styles = StyleSheet.create({
   reactLogo: {
     height: 163,
     width: 408,
-    marginTop:40,
-    marginLeft:30
+    marginTop: 40,
+    marginLeft: 30
   },
 
   tabsWrapper: {
@@ -285,7 +283,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
 
-  /* Markdown Styles */
   mdH3: {
     fontSize: 17,
     fontWeight: "600",
@@ -302,32 +299,27 @@ const styles = StyleSheet.create({
   mdP: {
     marginBottom: 10,
     lineHeight: 22,
-    backgroundColor: "transparent",
   },
 
   mdUl: {
     marginTop: 4,
     marginBottom: 12,
     paddingLeft: 8,
-    backgroundColor: "transparent",
   },
 
   mdLiRow: {
     flexDirection: "row",
     marginBottom: 6,
-    backgroundColor: "transparent",
   },
 
   mdBullet: {
     marginRight: 8,
     marginTop: 2,
-    backgroundColor: "transparent",
   },
 
   mdLiText: {
     flex: 1,
     lineHeight: 22,
-    backgroundColor: "transparent",
   },
 
   mdStrong: {
