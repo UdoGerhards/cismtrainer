@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Button, Pressable, StyleSheet, TextInput } from "react-native";
 
@@ -11,6 +11,7 @@ import { Image } from 'expo-image';
 export default function LoginScreen() {
 
   const { login } = useAuth();
+  const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,20 +27,24 @@ export default function LoginScreen() {
     setError("");
 
     try {
-      const success = await login(email, password);
+      const result = await login(email, password);
 
-      if (success) {
-        router.replace("/");
-      } else {
+      if (result === "error") {
         setError("Login fehlgeschlagen");
+        return;
       }
+
+      // 🔐 2FA Login
+      if (result === "2fa") {
+        router.replace("/2fa");
+        return;
+      }
+
+      // ✅ normaler Login → AuthGuard übernimmt Routing
+
     } catch (e) {
       setError("Serverfehler beim Login");
     }
-  };
-
-  const goToRegistration = () => {
-    router.push("/registration");
   };
 
   return (
@@ -89,7 +94,7 @@ export default function LoginScreen() {
           />
         </ThemedView>
 
-        <Pressable onPress={goToRegistration}>
+        <Pressable onPress={() => router.push("/registration")}>
           <ThemedText style={styles.link}>
             Authenticator registrieren
           </ThemedText>

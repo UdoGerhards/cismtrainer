@@ -1,5 +1,4 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
-import { router, useSegments } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
@@ -7,30 +6,15 @@ import "react-native-reanimated";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 
 function AppContent() {
-  const { loading, token } = useAuth();
+  const { loading } = useAuth();
   const colorScheme = useColorScheme();
-  const segments = useSegments();
 
-  const first = segments[0];
-  const inLogin = first === "login";
-  const inRegistration = first === "registration";
-
-  useEffect(() => {
-    if (loading) return;
-
-    if (!token && !inLogin && !inRegistration) {
-      router.replace("/login");
-    }
-
-    if (token && (inLogin || inRegistration)) {
-      router.replace("/");
-    }
-  }, [token, loading, segments]);
-
+  // ----------------------------------
+  // Global Loading State
+  // ----------------------------------
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -39,14 +23,14 @@ function AppContent() {
     );
   }
 
-  if (!token && !inLogin && !inRegistration) {
-    return null;
-  }
+  // ----------------------------------
+  // KEINE Routing-Logik hier!
+  // ----------------------------------
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Drawer screenOptions={{ headerTitle: "" }}>
-        
+
         <Drawer.Screen
           name="index"
           options={{ title: "performance" }}

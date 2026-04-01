@@ -1,7 +1,13 @@
 import client from "@/scripts/client";
 import { useRouter, useSegments } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Platform } from "react-native";
 
 const TOKEN_KEY = "auth_token";
@@ -11,18 +17,37 @@ type User = {
   id: string;
   firstname: string;
   lastname: string;
+  twoFactor: {
+    enabled: boolean;
+  };
+  mustChangePassword: boolean;
 };
 
 type AuthContextType = {
   token: string | null;
+  tempToken: string | null;
   user: User | null;
   loading: boolean;
-  login: (username?: string, password?: string) => Promise<boolean>;
+  isAuthenticated: boolean;
+
+  login: (username?: string, password?: string) => Promise<"ok" | "2fa" | "error">;
+  verify2FA: (code: string) => Promise<boolean>;
+
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+  setUser: (user: User | null) => void;
+
+  loginEmail: string | null;
+  setLoginEmail: (email: string) => void;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+/*
+==========================================
+STORAGE HELPERS
+==========================================
+*/
 async function getItem(key: string): Promise<string | null> {
   if (Platform.OS === "web") {
     if (typeof window === "undefined") return null;
@@ -47,10 +72,19 @@ async function deleteItem(key: string) {
   await SecureStore.deleteItemAsync(key);
 }
 
+/*
+==========================================
+PROVIDER
+==========================================
+*/
 export function AuthProvider({ children }: any) {
   const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [tempToken, setTempToken] = useState<string | null>(null);
+  const [user, setUserState] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const [loginEmail, setLoginEmailState] = useState<string | null>(null);
 
   const initialized = useRef(false);
 
@@ -60,6 +94,11 @@ export function AuthProvider({ children }: any) {
     init();
   }, []);
 
+  /*
+  ==========================================
+  INIT
+  ==========================================
+  */
   async function init() {
     try {
       const storedToken = await getItem(TOKEN_KEY);
@@ -70,89 +109,248 @@ export function AuthProvider({ children }: any) {
 
           if (me?.user) {
             setToken(storedToken);
-            setUser(me.user);
+            setUserState(me.user);
+            setIsAuthenticated(true);
+            await setItem(USER_KEY, JSON.stringify(me.user));
             return;
           }
-
-          throw new Error("Token invalid");
-        } catch {
-          await deleteItem(TOKEN_KEY);
-          await deleteItem(USER_KEY);
+        } catch (e) {
+          console.warn("INIT failed:", e);
         }
+
+        await deleteItem(TOKEN_KEY);
+        await deleteItem(USER_KEY);
       }
 
       setToken(null);
-      setUser(null);
-
+      setUserState(null);
+      setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }
   }
 
-  async function login(username?: string, password?: string): Promise<boolean> {
+  /*
+  ==========================================
+  LOGIN
+  ==========================================
+  */
+  async function login(username?: string, password?: string): Promise<"ok" | "2fa" | "error"> {
     try {
+      await deleteItem(TOKEN_KEY);
+      await deleteItem(USER_KEY);
+
+      setToken(null);
+      setTempToken(null);
+      setUserState(null);
+      setIsAuthenticated(false);
+
       const response = await client.login(username, password);
 
-      if (!response?.token || !response?.user) {
-        return false;
+      if (response?.requires2FA && response?.tempToken) {
+        setTempToken(response.tempToken);
+        return "2fa";
       }
 
-      await setItem(TOKEN_KEY, response.token);
-      await setItem(USER_KEY, JSON.stringify(response.user));
+      if (response?.token && response?.user) {
+        // 🔥 STATE FIRST
+        setToken(response.token);
+        setUserState(response.user);
+        setIsAuthenticated(true);
 
-      setToken(response.token);
-      setUser(response.user);
+        // 🔥 THEN STORAGE
+        await setItem(TOKEN_KEY, response.token);
+        await setItem(USER_KEY, JSON.stringify(response.user));
 
-      return true;
+        return "ok";
+      }
+
+      return "error";
     } catch {
+      return "error";
+    }
+  }
+
+  /*
+  ==========================================
+  2FA VERIFY
+  ==========================================
+  */
+  async function verify2FA(code: string): Promise<boolean> {
+    if (!tempToken) return false;
+
+    try {
+      const response = await client.verify2FA(tempToken, code);
+
+      console.log("🔐 VERIFY RESULT:", response);
+      console.log("SET TOKEN:", response.token);
+
+      if (response?.success && response?.token && response?.user) {
+        // 🔥 STATE FIRST (CRITICAL FIX)
+        setToken(response.token);
+        setUserState(response.user);
+        setTempToken(null);
+        setIsAuthenticated(true);
+
+        // 🔥 THEN STORAGE
+        await setItem(TOKEN_KEY, response.token);
+        await setItem(USER_KEY, JSON.stringify(response.user));
+
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      console.error("2FA ERROR:", e);
       return false;
     }
   }
 
+  /*
+  ==========================================
+  LOGOUT
+  ==========================================
+  */
   async function logout() {
     await deleteItem(TOKEN_KEY);
     await deleteItem(USER_KEY);
 
     setToken(null);
-    setUser(null);
+    setTempToken(null);
+    setUserState(null);
+    setIsAuthenticated(false);
+    setLoginEmailState(null);
+  }
+
+  /*
+  ==========================================
+  REFRESH USER
+  ==========================================
+  */
+  async function refreshUser() {
+    if (!token) return;
+
+    try {
+      const me = await client.me(token);
+
+      if (me?.user) {
+        setUserState(me.user);
+        await setItem(USER_KEY, JSON.stringify(me.user));
+      }
+    } catch (e) {
+      console.warn("refreshUser failed:", e);
+      // ❌ KEIN logout mehr hier!
+    }
+  }
+
+  function setUser(user: User | null) {
+    setUserState(user);
+    if (user) {
+      setItem(USER_KEY, JSON.stringify(user));
+    } else {
+      deleteItem(USER_KEY);
+    }
+  }
+
+  function setLoginEmail(email: string) {
+    setLoginEmailState(email);
   }
 
   return (
-    <AuthContext.Provider value={{ token, user, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        token,
+        tempToken,
+        user,
+        loading,
+        isAuthenticated,
+
+        login,
+        verify2FA,
+        logout,
+        refreshUser,
+        setUser,
+
+        loginEmail,
+        setLoginEmail,
+      }}
+    >
       <AuthGuard />
       {children}
     </AuthContext.Provider>
   );
 }
 
+/*
+==========================================
+AUTH GUARD (STABIL VERSION)
+==========================================
+*/
 function AuthGuard() {
-  const { token, loading } = useAuth();
+  const { user, loading, isAuthenticated, tempToken, token } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-
-    console.log(loading);
-
     if (loading) return;
 
     const first = segments[0];
 
-    console.log(first);
+    const inLogin = first === "login";
+    const inRegistration = first === "registration";
+    const inChangePassword = first === "change-password";
+    const in2FA = first === "2fa";
 
+    console.log("🛡️ GUARD", {
+      token,
+      user,
+      isAuthenticated,
+      tempToken,
+      route: first,
+    });
 
-    if (!token && first !== "login" && first !== "registration") {
-      router.replace("/login");
+    // 1. 2FA pending
+    if (tempToken) {
+      if (!in2FA) router.replace("/2fa");
+      return;
     }
 
-    if (token && (first === "login" || first === "registration")) {
-      router.replace("/");
+    // 2. Not authenticated (🔥 FIXED)
+    if (!isAuthenticated || !user) {
+      if (!inLogin) router.replace("/login");
+      return;
     }
-  }, [token, loading, segments]);
+
+    // 3. No 2FA setup
+    if (!user.twoFactor?.enabled) {
+      if (!inRegistration) router.replace("/registration");
+      return;
+    }
+
+    // 4. Must change password
+    if (user.mustChangePassword) {
+      if (!inChangePassword) router.replace("/change-password");
+      return;
+    }
+
+    if (inLogin) {
+      if (user.mustChangePassword) {
+        router.replace("/change-password");
+      } else {
+        router.replace("/");
+      }
+    }
+
+  }, [user, loading, isAuthenticated, tempToken, segments]);
 
   return null;
 }
 
+/*
+==========================================
+HOOK
+==========================================
+*/
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("AuthContext missing");

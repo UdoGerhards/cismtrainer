@@ -10,13 +10,12 @@ const TOKEN_KEY = "auth_token";
 class Client extends Base {
   constructor() {
     super();
-    const instance = this;
 
-    instance.apiBase = instance.getApiBase();
-    instance.token = null;
-    instance.conf = conf;
+    this.apiBase = this.getApiBase();
+    this.token = null;
+    this.conf = conf;
 
-    console.log("API BASE:", instance.apiBase);
+    console.log("API BASE:", this.apiBase);
   }
 
   /*
@@ -44,8 +43,6 @@ class Client extends Base {
     return "http://localhost/api";
   }
 
-  init() {}
-
   /*
   ==========================================
   STORAGE
@@ -53,12 +50,16 @@ class Client extends Base {
   */
 
   async getToken() {
+    if (this.token) return this.token; // 🔥 Cache nutzen
+
     if (Platform.OS === "web") {
       if (typeof window === "undefined") return null;
-      return localStorage.getItem(TOKEN_KEY);
+      this.token = localStorage.getItem(TOKEN_KEY);
+      return this.token;
     }
 
-    return SecureStore.getItemAsync(TOKEN_KEY);
+    this.token = await SecureStore.getItemAsync(TOKEN_KEY);
+    return this.token;
   }
 
   async setToken(token) {
@@ -89,11 +90,11 @@ class Client extends Base {
   ==========================================
   */
 
-  async request(url, options = {}) {
-    const token = await this.getToken();
+  async request(url, options = {}, customToken = null) {
+    const token = customToken || (await this.getToken());
 
     const fullUrl = `${this.apiBase}${url}`;
-    console.log("REQUEST:", fullUrl);
+    console.log("REQUEST:", fullUrl, "TOKEN:", !!token);
 
     let res;
 
@@ -101,9 +102,9 @@ class Client extends Base {
       res = await fetch(fullUrl, {
         ...options,
         headers: {
+          ...(options.headers || {}), // 🔥 zuerst
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(options.headers || {}),
+          ...(token ? { Authorization: `Bearer ${token}` } : {}), // 🔥 dann Token
         },
       });
     } catch (e) {
@@ -112,6 +113,7 @@ class Client extends Base {
     }
 
     if (res.status === 401) {
+      console.warn("⚠️ 401 → clearing token");
       await this.clearToken();
 
       const error = new Error("UNAUTHORIZED");
@@ -120,6 +122,7 @@ class Client extends Base {
     }
 
     if (!res.ok) {
+      console.error("HTTP ERROR:", res.status);
       throw new Error(`HTTP ${res.status}`);
     }
 
@@ -132,53 +135,64 @@ class Client extends Base {
   ==========================================
   */
 
-  // 🔐 Login (mTLS oder Mobile)
   async login(email, password) {
-    try {
-      const body = email && password ? { email, password } : {};
+    const data = await this.request("/user", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
 
-      const data = await this.request("/user", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
-
-      if (data?.token) {
-        await this.setToken(data.token);
-      }
-
+    if (data?.requires2FA) {
       return data;
-    } catch (error) {
-      console.log("LOGIN ERROR FULL:", error?.message, error);
-      throw error;
     }
+
+    if (data?.token) {
+      await this.setToken(data.token);
+    }
+
+    return data;
   }
 
-  // 🔐 Token validieren (angepasst an dein Backend)
+  async verify2FA(tempToken, code) {
+    const data = await this.request(
+      "/2fa/verify",
+      {
+        method: "POST",
+        body: JSON.stringify({ token: code }),
+      },
+      tempToken,
+    );
+
+    if (data?.token) {
+      await this.setToken(data.token);
+    }
+
+    return data;
+  }
+
+  /*
+  ==========================================
+  CURRENT USER (🔥 FIXED)
+  ==========================================
+  */
+
   async me(token) {
     try {
-      const res = await fetch(`${this.apiBase}/auth`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const data = await this.request("/me", { method: "GET" }, token);
 
-      if (res.status === 401) {
-        throw new Error("UNAUTHORIZED");
+      if (!data?.user) {
+        console.warn("⚠️ ME: no user in response", data);
+        throw new Error("Invalid /me response");
       }
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-
-      const data = await res.json();
 
       return {
         user: {
           id: data.user.id,
           firstname: data.user.firstname,
           lastname: data.user.lastname,
+          twoFactor: {
+            enabled: !!data.user.twoFactor?.enabled,
+          },
+          mustChangePassword: !!data.user.mustChangePassword,
         },
       };
     } catch (err) {
@@ -187,23 +201,14 @@ class Client extends Base {
     }
   }
 
-  async fetchUserByEmail(email) {
-    return this.request("/user/by/email", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    });
-  }
-
   /*
   ==========================================
-  API CALLS
+  REST (unverändert)
   ==========================================
   */
 
   async fetchQuestion() {
-    return this.request("/question", {
-      method: "POST",
-    });
+    return this.request("/question", { method: "POST" });
   }
 
   async fetchQuestions(number) {
