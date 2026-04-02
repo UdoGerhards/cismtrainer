@@ -301,6 +301,10 @@ function AuthGuard() {
     const inChangePassword = first === "change-password";
     const in2FA = first === "2fa";
 
+    const logout = async () => {
+      setUser(null);
+    };
+
     console.log("🛡️ GUARD", {
       token,
       user,

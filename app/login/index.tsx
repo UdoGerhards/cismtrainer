@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Button, Pressable, StyleSheet, TextInput } from "react-native";
+import { Button, StyleSheet, TextInput } from "react-native";
 
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
@@ -16,6 +17,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const isFormValid =
     email.trim().length > 0 &&
@@ -34,13 +36,12 @@ export default function LoginScreen() {
         return;
       }
 
-      // 🔐 2FA Login
       if (result === "2fa") {
         router.replace("/2fa");
         return;
       }
 
-      // ✅ normaler Login → AuthGuard übernimmt Routing
+      // normaler Login → AuthGuard übernimmt
 
     } catch (e) {
       setError("Serverfehler beim Login");
@@ -62,7 +63,10 @@ export default function LoginScreen() {
         <ThemedText style={styles.label}>E-Mail:</ThemedText>
         <TextInput
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(text) => {
+            setEmail(text);
+            setError("");
+          }}
           placeholder="E-Mail"
           placeholderTextColor="#999"
           autoCapitalize="none"
@@ -70,14 +74,28 @@ export default function LoginScreen() {
         />
 
         <ThemedText style={styles.label}>Passwort:</ThemedText>
-        <TextInput
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Passwort"
-          placeholderTextColor="#999"
-          secureTextEntry
-          style={styles.input}
-        />
+
+        {/* ✅ Passwortfeld mit Icon */}
+        <ThemedView style={styles.inputWrapper}>
+          <TextInput
+            value={password}
+            onChangeText={(text) => {
+              setPassword(text);
+              setError("");
+            }}
+            placeholder="Passwort"
+            placeholderTextColor="#999"
+            secureTextEntry={!showPassword}
+            style={styles.inputWithIcon}
+          />
+
+          <Ionicons
+            name={showPassword ? "eye-off" : "eye"}
+            size={22}
+            style={styles.icon}
+            onPress={() => setShowPassword((prev) => !prev)}
+          />
+        </ThemedView>
 
         {error ? (
           <ThemedText style={styles.error}>
@@ -94,11 +112,7 @@ export default function LoginScreen() {
           />
         </ThemedView>
 
-        <Pressable onPress={() => router.push("/registration")}>
-          <ThemedText style={styles.link}>
-            Authenticator registrieren
-          </ThemedText>
-        </Pressable>
+        {/* ❌ Link wurde entfernt */}
 
       </ThemedView>
     </ParallaxScrollView>
@@ -114,28 +128,47 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 4,
   },
+
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
     padding: 8,
     borderRadius: 6,
   },
+
+  // ✅ neues Wrapper-System
+  inputWrapper: {
+    position: "relative",
+    justifyContent: "center",
+  },
+
+  inputWithIcon: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 8,
+    paddingRight: 40,
+    borderRadius: 6,
+  },
+
+  icon: {
+    position: "absolute",
+    right: 10,
+    color: "#888",
+  },
+
   fixToText: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+
   reactLogo: {
     height: 163,
     width: 408,
     marginTop: 40,
     marginLeft: 30
   },
+
   error: {
     color: "red",
-  },
-  link: {
-    marginTop: 10,
-    color: "#007AFF",
-    textDecorationLine: "underline",
   },
 });
