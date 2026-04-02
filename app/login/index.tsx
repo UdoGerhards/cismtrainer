@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Button, StyleSheet, TextInput } from "react-native";
 
 import ParallaxScrollView from '@/components/parallax-scroll-view';
@@ -8,6 +8,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from "@/context/AuthContext";
 import { Image } from 'expo-image';
+
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function LoginScreen() {
 
@@ -23,6 +25,19 @@ export default function LoginScreen() {
     email.trim().length > 0 &&
     password.trim().length > 0;
 
+  useFocusEffect(
+    useCallback(() => {
+      resetForm();
+    }, [])
+  );
+
+  const resetForm = () => {
+    setEmail("");
+    setPassword("");
+    setShowPassword(false);
+    setError("");
+  };
+
   const handleLogin = async () => {
     if (!isFormValid) return;
 
@@ -35,6 +50,9 @@ export default function LoginScreen() {
         setError("Login fehlgeschlagen");
         return;
       }
+
+      // ✅ RESET IMMER VOR NAVIGATION
+      resetForm();
 
       if (result === "2fa") {
         router.replace("/2fa");
@@ -87,6 +105,8 @@ export default function LoginScreen() {
             placeholderTextColor="#999"
             secureTextEntry={!showPassword}
             style={styles.inputWithIcon}
+            returnKeyType="done"
+            onSubmitEditing={handleLogin}
           />
 
           <Ionicons
