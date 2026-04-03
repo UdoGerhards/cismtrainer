@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, StyleSheet, TextInput } from "react-native";
 
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Ionicons } from '@expo/vector-icons';
+import ParallaxScrollView from "@/components/parallax-scroll-view";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "@/context/AuthContext";
 import client from "@/scripts/client";
-import { Image } from 'expo-image';
+import { Image } from "expo-image";
 
 import { useRouter } from "expo-router";
+import { useTheme } from "@react-navigation/native";
 
 export default function ChangePasswordScreen() {
+  const { colors } = useTheme(); // ✅ THEME
 
   const { refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -29,12 +31,8 @@ export default function ChangePasswordScreen() {
 
   const [showPassword, setShowPassword] = useState(false);
 
-  // ✅ an Backend angepasst
-  const isValid =
-    password.trim().length >= 8 &&
-    password === confirm;
+  const isValid = password.trim().length >= 8 && password === confirm;
 
-  // ✅ Zentrales Error-Messaging-System
   const ERROR_MESSAGES: Record<string, string> = {
     PASSWORD_SAME: "Neues Passwort darf nicht dem alten entsprechen",
     PASSWORD_WEAK: "Passwort ist zu unsicher (bitte Anforderungen beachten)",
@@ -70,8 +68,6 @@ export default function ChangePasswordScreen() {
         }),
       });
 
-      console.log("Change password response:", res);
-
       if (res?.success === true) {
         setSuccess(true);
 
@@ -81,7 +77,6 @@ export default function ChangePasswordScreen() {
           setLoading(false);
           router.replace("/performance");
         }, 1500);
-
       } else {
         showError("SERVER_ERROR");
 
@@ -91,11 +86,7 @@ export default function ChangePasswordScreen() {
 
         setLoading(false);
       }
-
     } catch (e: any) {
-      console.log("ERROR:", e);
-
-      // ✅ robust gegen verschiedene client-Implementierungen
       const status = e?.status || e?.response?.status;
       const errorCode = e?.data?.error || e?.response?.data?.error;
 
@@ -119,7 +110,6 @@ export default function ChangePasswordScreen() {
     }
   };
 
-  // ✅ Cleanup
   useEffect(() => {
     return () => {
       if (errorTimeoutRef.current) {
@@ -130,23 +120,37 @@ export default function ChangePasswordScreen() {
 
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={{ backgroundColor: colors.background }}
+      headerBackgroundColor={{
+        light: colors.headerImageBackground,
+        dark: colors.headerImageBackground,
+      }}
       headerImage={
-        <Image
-          source={require('@/assets/images/CISM_logo_RGB-1024x409.png')}
-          style={styles.reactLogo}
-        />
+        <ThemedView
+          style={{
+            padding: 20,
+            backgroundColor: colors.headerImageBackground,
+          }}
+        >
+          <Image
+            source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
+            style={{
+              width: "60%", // 🔥 wie gewünscht
+              maxWidth: 480, // 🔥 für Web
+              aspectRatio: 1024 / 409,
+            }}
+            contentFit="contain"
+          />
+        </ThemedView>
       }
     >
-      <ThemedView style={styles.container}>
+      <ThemedView
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
+        <ThemedText style={styles.title}>Passwort ändern</ThemedText>
 
-        <ThemedText style={styles.title}>
-          Passwort ändern
-        </ThemedText>
-
-        <ThemedText style={styles.label}>
-          Neues Passwort:
-        </ThemedText>
+        <ThemedText style={styles.label}>Neues Passwort:</ThemedText>
 
         <ThemedView style={styles.inputWrapper}>
           <TextInput
@@ -158,20 +162,28 @@ export default function ChangePasswordScreen() {
             }}
             secureTextEntry={!showPassword}
             placeholder="Neues Passwort"
-            style={styles.inputWithIcon}
+            placeholderTextColor={colors.border}
+            style={[
+              styles.inputWithIcon,
+              {
+                borderColor: colors.border,
+                color: colors.text,
+                backgroundColor: colors.card,
+                width: "100%",
+                maxWidth: 400,
+              },
+            ]}
           />
 
           <Ionicons
             name={showPassword ? "eye-off" : "eye"}
             size={22}
-            style={styles.icon}
+            style={[styles.icon, { color: colors.border }]}
             onPress={() => setShowPassword((prev) => !prev)}
           />
         </ThemedView>
 
-        <ThemedText style={styles.label}>
-          Passwort bestätigen:
-        </ThemedText>
+        <ThemedText style={styles.label}>Passwort bestätigen:</ThemedText>
 
         <ThemedView style={styles.inputWrapper}>
           <TextInput
@@ -182,31 +194,43 @@ export default function ChangePasswordScreen() {
             }}
             secureTextEntry={!showPassword}
             placeholder="Wiederholen"
-            style={styles.inputWithIcon}
+            placeholderTextColor={colors.border}
+            style={[
+              styles.inputWithIcon,
+              {
+                borderColor: colors.border,
+                color: colors.text,
+                backgroundColor: colors.card,
+                width: "100%",
+                maxWidth: 400,
+              },
+            ]}
           />
 
           <Ionicons
             name={showPassword ? "eye-off" : "eye"}
             size={22}
-            style={styles.icon}
+            style={[styles.icon, { color: colors.border }]}
             onPress={() => setShowPassword((prev) => !prev)}
           />
         </ThemedView>
 
         {!isValid && password.length > 0 && (
-          <ThemedText style={styles.error}>
+          <ThemedText style={[styles.error, { color: colors.errorBackground }]}>
             Passwort ungültig oder stimmt nicht überein (min. 8 Zeichen)
           </ThemedText>
         )}
 
         {error ? (
-          <ThemedText style={styles.error}>
+          <ThemedText style={[styles.error, { color: colors.errorBackground }]}>
             {error}
           </ThemedText>
         ) : null}
 
         {success ? (
-          <ThemedText style={styles.success}>
+          <ThemedText
+            style={[styles.success, { color: colors.successBackground }]}
+          >
             Passwort erfolgreich geändert ✅
           </ThemedText>
         ) : null}
@@ -216,9 +240,9 @@ export default function ChangePasswordScreen() {
             title={loading ? "Wird geändert..." : "Passwort ändern"}
             onPress={handleChangePassword}
             disabled={!isValid || loading}
+            color={colors.primary}
           />
         </ThemedView>
-
       </ThemedView>
     </ParallaxScrollView>
   );
@@ -229,48 +253,51 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 16,
   },
+
   title: {
     fontSize: 22,
     marginBottom: 10,
   },
+
   label: {
     fontSize: 16,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 8,
-    borderRadius: 6,
-  },
+
   button: {
     marginTop: 10,
+    alignItems: "flex-start",
   },
-  error: {
-    color: "red",
-  },
-  success: {
-    color: "green",
-    fontWeight: "bold",
-  },
-  toggle: {
-    color: "#007AFF",
-    marginTop: 5,
-  },
-  inputWrapper: {
-  position: "relative",
-  justifyContent: "center",
-},
-inputWithIcon: {
-  borderWidth: 1,
-  borderColor: "#ccc",
-  padding: 8,
-  paddingRight: 40, // Platz für Icon!
-  borderRadius: 6,
-},
 
-icon: {
-  position: "absolute",
-  right: 10,
-  color: "#888",
-},
+  error: {
+    fontSize: 14,
+  },
+
+  success: {
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+
+  inputWrapper: {
+    position: "relative",
+    justifyContent: "center",
+  },
+
+  inputWithIcon: {
+    borderWidth: 1,
+    padding: 10,
+    paddingRight: 40,
+    borderRadius: 8,
+  },
+
+  icon: {
+    position: "absolute",
+    right: 10,
+  },
+
+  reactLogo: {
+    height: 163,
+    width: 408,
+    marginTop: 40,
+    marginLeft: 30,
+  },
 });

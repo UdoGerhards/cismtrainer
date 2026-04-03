@@ -3,25 +3,30 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import ExplanationBox from "@/components/ui/tst/explanationBox";
 import client from "@/scripts/client";
-import { Image } from 'expo-image';
+import { Image } from "expo-image";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Platform } from "react-native";
 
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@react-navigation/native";
 
 export default function ErgebnisScreen() {
+  const { colors } = useTheme();
+
   const { testId } = useLocalSearchParams();
   const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
-  const [result, setResult] = useState(null);
-  const [evaluation, setEvaluation] = useState(null);
+  const [result, setResult] = useState<any>(null);
+  const [evaluation, setEvaluation] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("correct");
 
-  const [expandedId, setExpandedId] = useState(null);
-  const [explanations, setExplanations] = useState({});
-  const [loadingExplanation, setLoadingExplanation] = useState(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [explanations, setExplanations] = useState<any>({});
+  const [loadingExplanation, setLoadingExplanation] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     async function loadResult() {
@@ -41,11 +46,11 @@ export default function ErgebnisScreen() {
     loadResult();
   }, [testId]);
 
-  function getCorrectAnswerText(answers, correctKey) {
-    return answers?.find(a => a.answer === correctKey)?.text || "—";
+  function getCorrectAnswerText(answers: any[], correctKey: string) {
+    return answers?.find((a) => a.answer === correctKey)?.text || "—";
   }
 
-  const handlePress = async (item) => {
+  const handlePress = async (item: any) => {
     const id = item._id;
 
     if (expandedId === id) {
@@ -61,15 +66,15 @@ export default function ErgebnisScreen() {
       setLoadingExplanation(id);
       const res = await client.getExplanation(id);
 
-      setExplanations(prev => ({
+      setExplanations((prev: any) => ({
         ...prev,
-        [id]: res || "Keine Erklärung vorhanden"
+        [id]: res || "Keine Erklärung vorhanden",
       }));
     } catch (e) {
       console.error(e);
-      setExplanations(prev => ({
+      setExplanations((prev: any) => ({
         ...prev,
-        [id]: "Fehler beim Laden der Erklärung"
+        [id]: "Fehler beim Laden der Erklärung",
       }));
     } finally {
       setLoadingExplanation(null);
@@ -78,7 +83,14 @@ export default function ErgebnisScreen() {
 
   if (loading || !result || !evaluation) {
     return (
-      <ThemedView>
+      <ThemedView
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: colors.background,
+        }}
+      >
         <ThemedText>Lade Ergebnis...</ThemedText>
       </ThemedView>
     );
@@ -86,7 +98,7 @@ export default function ErgebnisScreen() {
 
   const pieData = [
     { name: "OK", value: result.correct ?? 0 },
-    { name: "Wrong", value: result.wrong ?? 0 }
+    { name: "Wrong", value: result.wrong ?? 0 },
   ];
 
   const currentData =
@@ -96,53 +108,115 @@ export default function ErgebnisScreen() {
 
   return (
     <FlatList
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={{
+        paddingBottom: 40,
+        paddingHorizontal: 16,
+
+        // 🔥 Responsive Breite
+        width: "100%",
+        alignSelf: "center",
+        // maxWidth: Platform.OS === "web" ? "99%" : "100%",
+      }}
       data={currentData}
       keyExtractor={(item) => item._id}
-
       ListHeaderComponent={
         <>
-          {/* LOGO */}
-          <Image
-            source={require('@/assets/images/CISM_logo_RGB-1024x409.png')}
-            style={styles.reactLogo}
-          />
+          {/* ✅ RESPONSIVE HEADER IMAGE */}
+          <ThemedView
+            style={{
+              padding: 20,
+              backgroundColor: colors.background,
+            }}
+          >
+            <Image
+              source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
+              style={{
+                width: "60%", // 🔥 jetzt 60%
+                maxWidth: 480, // optional für große Screens
+                aspectRatio: 1024 / 409,
+              }}
+              contentFit="contain"
+            />
+          </ThemedView>
 
-          {/* CHART */}
-          <ThemedView>
+          {/* CHART CARD */}
+          <ThemedView
+            style={{
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              borderWidth: 1,
+              borderRadius: 12,
+              padding: 16,
+              marginHorizontal: 16,
+            }}
+          >
             <Pie data={pieData} />
           </ThemedView>
 
           {/* TABS */}
-          <ThemedView style={styles.tabsWrapper}>
+          <ThemedView
+            style={[styles.tabsWrapper, { backgroundColor: colors.background }]}
+          >
             <ThemedView style={styles.tabsRow}>
-
-              <Pressable onPress={() => setActiveTab("correct")} style={styles.tabItem}>
-                <ThemedText style={[
-                  styles.tabText,
-                  activeTab === "correct" && styles.activeTabText
-                ]}>
+              <Pressable
+                onPress={() => setActiveTab("correct")}
+                style={styles.tabItem}
+              >
+                <ThemedText
+                  style={[
+                    styles.tabText,
+                    activeTab === "correct"
+                      ? { color: colors.primary }
+                      : { color: colors.text, opacity: 0.5 },
+                  ]}
+                >
                   CORRECT
                 </ThemedText>
-                {activeTab === "correct" && <ThemedView style={styles.tabUnderline} />}
+                {activeTab === "correct" && (
+                  <ThemedView
+                    style={[
+                      styles.tabUnderline,
+                      { backgroundColor: colors.primary },
+                    ]}
+                  />
+                )}
               </Pressable>
 
-              <Pressable onPress={() => setActiveTab("wrong")} style={styles.tabItem}>
-                <ThemedText style={[
-                  styles.tabText,
-                  activeTab === "wrong" && styles.activeTabText
-                ]}>
+              <Pressable
+                onPress={() => setActiveTab("wrong")}
+                style={styles.tabItem}
+              >
+                <ThemedText
+                  style={[
+                    styles.tabText,
+                    activeTab === "wrong"
+                      ? { color: colors.primary }
+                      : { color: colors.text, opacity: 0.5 },
+                  ]}
+                >
                   WRONG
                 </ThemedText>
-                {activeTab === "wrong" && <ThemedView style={styles.tabUnderline} />}
+                {activeTab === "wrong" && (
+                  <ThemedView
+                    style={[
+                      styles.tabUnderline,
+                      { backgroundColor: colors.primary },
+                    ]}
+                  />
+                )}
               </Pressable>
-
             </ThemedView>
 
-            <ThemedView style={styles.tabDivider} />
+            <ThemedView
+              style={[
+                styles.tabDivider,
+                { backgroundColor: colors.border, opacity: 0.8 },
+              ]}
+            />
           </ThemedView>
         </>
       }
-
       renderItem={({ item }) => {
         const correctText = getCorrectAnswerText(item.answers, item.correct);
         const userText = item.user;
@@ -154,27 +228,42 @@ export default function ErgebnisScreen() {
             onPress={() => handlePress(item)}
             style={({ hovered, pressed }) => [
               styles.listItem,
-              hovered && styles.hovered,
-              pressed && styles.pressed
+              {
+                borderColor: colors.border,
+                backgroundColor: hovered ? colors.card : colors.background,
+                opacity: pressed ? 0.7 : 1,
+              },
             ]}
           >
-            <ThemedText style={styles.question}>
-              {item.question}
-            </ThemedText>
+            <ThemedText style={styles.question}>{item.question}</ThemedText>
 
             <ThemedView style={styles.row}>
-              <ThemedText style={styles.label}>Answer:</ThemedText>
-              <ThemedText style={[styles.text, styles.correct]}>
+              <ThemedText style={[styles.label, { color: colors.text }]}>
+                Answer:
+              </ThemedText>
+              <ThemedText
+                style={[
+                  styles.text,
+                  { color: colors.success, fontWeight: "600" },
+                ]}
+              >
                 {correctText}
               </ThemedText>
             </ThemedView>
 
             <ThemedView style={styles.row}>
-              <ThemedText style={styles.label}>User:</ThemedText>
-              <ThemedText style={[
-                styles.text,
-                { color: isCorrect ? "green" : "red" }
-              ]}>
+              <ThemedText style={[styles.label, { color: colors.text }]}>
+                User:
+              </ThemedText>
+              <ThemedText
+                style={[
+                  styles.text,
+                  {
+                    color: isCorrect ? colors.success : colors.error,
+                    fontWeight: "600",
+                  },
+                ]}
+              >
                 {userText}
               </ThemedText>
             </ThemedView>
@@ -194,15 +283,9 @@ export default function ErgebnisScreen() {
 }
 
 const styles = StyleSheet.create({
-  reactLogo: {
-    height: 163,
-    width: 408,
-    marginTop: 40,
-    marginLeft: 30
-  },
-
   tabsWrapper: {
     marginTop: 20,
+    paddingHorizontal: 16,
   },
 
   tabsRow: {
@@ -215,39 +298,23 @@ const styles = StyleSheet.create({
   },
 
   tabText: {
-    color: "#666",
-    fontWeight: "500",
-  },
-
-  activeTabText: {
-    color: "#2f6fed",
+    fontWeight: "600",
   },
 
   tabUnderline: {
     marginTop: 6,
     height: 2,
-    backgroundColor: "#2f6fed",
     width: "100%",
   },
 
   tabDivider: {
     height: 1,
-    backgroundColor: "#ddd",
     marginTop: 4,
   },
 
   listItem: {
-    padding: 12,
+    padding: 16,
     borderBottomWidth: 1,
-    borderColor: "#dddddd",
-  },
-
-  hovered: {
-    backgroundColor: "#dddddd",
-  },
-
-  pressed: {
-    opacity: 0.7,
   },
 
   question: {
@@ -263,7 +330,6 @@ const styles = StyleSheet.create({
 
   label: {
     width: 70,
-    color: "black",
     fontWeight: "bold",
   },
 
@@ -272,14 +338,9 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
 
-  correct: {
-    color: "green",
-  },
-
   explanationBox: {
     marginTop: 10,
     padding: 12,
-    backgroundColor: "#f2f2f2",
     borderRadius: 8,
   },
 

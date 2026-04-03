@@ -1,18 +1,18 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Button, StyleSheet, TextInput } from "react-native";
 
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import ParallaxScrollView from "@/components/parallax-scroll-view";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/AuthContext";
-import { Image } from 'expo-image';
+import { Image } from "expo-image";
 
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useTheme } from "@react-navigation/native";
 
 export default function LoginScreen() {
-
+  const { colors } = useTheme(); // ✅ THEME
   const { login } = useAuth();
   const router = useRouter();
 
@@ -21,14 +21,12 @@ export default function LoginScreen() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const isFormValid =
-    email.trim().length > 0 &&
-    password.trim().length > 0;
+  const isFormValid = email.trim().length > 0 && password.trim().length > 0;
 
   useFocusEffect(
     useCallback(() => {
       resetForm();
-    }, [])
+    }, []),
   );
 
   const resetForm = () => {
@@ -51,16 +49,12 @@ export default function LoginScreen() {
         return;
       }
 
-      // ✅ RESET IMMER VOR NAVIGATION
       resetForm();
 
       if (result === "2fa") {
         router.replace("/2fa");
         return;
       }
-
-      // normaler Login → AuthGuard übernimmt
-
     } catch (e) {
       setError("Serverfehler beim Login");
     }
@@ -68,16 +62,22 @@ export default function LoginScreen() {
 
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={{ backgroundColor: colors.background }}
+      headerBackgroundColor={{
+        light: colors.card,
+        dark: colors.card,
+      }}
       headerImage={
         <Image
-          source={require('@/assets/images/CISM_logo_RGB-1024x409.png')}
+          source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
           style={styles.reactLogo}
         />
       }
     >
-      <ThemedView style={styles.container}>
-
+      <ThemedView
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
         <ThemedText style={styles.label}>E-Mail:</ThemedText>
         <TextInput
           value={email}
@@ -86,14 +86,22 @@ export default function LoginScreen() {
             setError("");
           }}
           placeholder="E-Mail"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.border}
           autoCapitalize="none"
-          style={styles.input}
+          style={[
+            styles.input,
+            {
+              borderColor: colors.border,
+              color: colors.text,
+              backgroundColor: colors.card,
+              width: "100%",
+              maxWidth: 400,
+            },
+          ]}
         />
 
         <ThemedText style={styles.label}>Passwort:</ThemedText>
 
-        {/* ✅ Passwortfeld mit Icon */}
         <ThemedView style={styles.inputWrapper}>
           <TextInput
             value={password}
@@ -102,9 +110,18 @@ export default function LoginScreen() {
               setError("");
             }}
             placeholder="Passwort"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.border}
             secureTextEntry={!showPassword}
-            style={styles.inputWithIcon}
+            style={[
+              styles.inputWithIcon,
+              {
+                borderColor: colors.border,
+                color: colors.text,
+                backgroundColor: colors.card,
+                width: "100%",
+                maxWidth: 400,
+              },
+            ]}
             returnKeyType="done"
             onSubmitEditing={handleLogin}
           />
@@ -112,13 +129,13 @@ export default function LoginScreen() {
           <Ionicons
             name={showPassword ? "eye-off" : "eye"}
             size={22}
-            style={styles.icon}
+            style={[styles.icon, { color: colors.border }]}
             onPress={() => setShowPassword((prev) => !prev)}
           />
         </ThemedView>
 
         {error ? (
-          <ThemedText style={styles.error}>
+          <ThemedText style={[styles.error, { color: colors.errorBackground }]}>
             {error}
           </ThemedText>
         ) : null}
@@ -128,12 +145,9 @@ export default function LoginScreen() {
             title="Login"
             onPress={handleLogin}
             disabled={!isFormValid}
-            color={isFormValid ? "#007AFF" : "#ccc"}
+            color={isFormValid ? colors.primary : colors.border}
           />
         </ThemedView>
-
-        {/* ❌ Link wurde entfernt */}
-
       </ThemedView>
     </ParallaxScrollView>
   );
@@ -144,6 +158,7 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 16,
   },
+
   label: {
     fontSize: 16,
     marginBottom: 4,
@@ -151,12 +166,10 @@ const styles = StyleSheet.create({
 
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 8,
-    borderRadius: 6,
+    padding: 10,
+    borderRadius: 8,
   },
 
-  // ✅ neues Wrapper-System
   inputWrapper: {
     position: "relative",
     justifyContent: "center",
@@ -164,31 +177,30 @@ const styles = StyleSheet.create({
 
   inputWithIcon: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 8,
+    padding: 10,
     paddingRight: 40,
-    borderRadius: 6,
+    borderRadius: 8,
   },
 
   icon: {
     position: "absolute",
     right: 10,
-    color: "#888",
   },
 
   fixToText: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
 
   reactLogo: {
     height: 163,
     width: 408,
     marginTop: 40,
-    marginLeft: 30
+    marginLeft: 30,
   },
 
   error: {
-    color: "red",
+    fontSize: 14,
   },
 });

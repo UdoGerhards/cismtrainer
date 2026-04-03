@@ -2,19 +2,21 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet } from "react-native";
 
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Image } from 'expo-image';
+import ParallaxScrollView from "@/components/parallax-scroll-view";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { Image } from "expo-image";
 
 import OtpInput, { OtpInputRef } from "@/components/ui/OTPInput";
 import { useAuth } from "@/context/AuthContext";
+
+import { useTheme } from "@react-navigation/native";
 
 const MAX_ATTEMPTS = 5;
 const COOLDOWN_SECONDS = 30;
 
 export default function TwoFactorScreen() {
-
+  const { colors } = useTheme(); // ✅ THEME
   const { verify2FA, tempToken } = useAuth();
   const router = useRouter();
 
@@ -25,8 +27,6 @@ export default function TwoFactorScreen() {
   const [cooldown, setCooldown] = useState(0);
 
   const otpRef = useRef<OtpInputRef>(null);
-
-
 
   // 🔐 redirect if no tempToken
   useEffect(() => {
@@ -45,24 +45,6 @@ export default function TwoFactorScreen() {
 
     return () => clearInterval(timer);
   }, [cooldown]);
-
-  const handleChange = (value: string, index: number) => {
-    if (!/^\d?$/.test(value)) return;
-
-    const newCode = [...code];
-    newCode[index] = value;
-    setCode(newCode);
-
-    if (value && index < 5) {
-      inputs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === "Backspace" && !code[index] && index > 0) {
-      inputs.current[index - 1]?.focus();
-    }
-  };
 
   const handleVerify = async (otpCode: string) => {
     if (loading || cooldown > 0 || attempts >= MAX_ATTEMPTS) return;
@@ -85,18 +67,11 @@ export default function TwoFactorScreen() {
         setCooldown(COOLDOWN_SECONDS);
         setError("Code ungültig");
 
-        // 🔥 RESET + Fokus zurück
         otpRef.current?.reset();
-
         return;
       }
-
-      // ✅ Erfolg → AuthGuard übernimmt Routing
-
     } catch {
       setError("Verifizierung fehlgeschlagen");
-
-      // 🔥 auch hier reset
       otpRef.current?.reset();
     } finally {
       setLoading(false);
@@ -105,66 +80,102 @@ export default function TwoFactorScreen() {
 
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={{ backgroundColor: colors.background }}
+      headerBackgroundColor={{
+        light: colors.headerImageBackground,
+        dark: colors.headerImageBackground,
+      }}
       headerImage={
-        <Image
-          source={require('@/assets/images/CISM_logo_RGB-1024x409.png')}
-          style={styles.reactLogo}
-        />
+        <ThemedView
+          style={{
+            padding: 20,
+            backgroundColor: colors.headerImageBackground,
+          }}
+        >
+          <Image
+            source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
+            style={{
+              width: "60%", // 🔥 wie gewünscht
+              maxWidth: 480, // 🔥 für Web
+              aspectRatio: 1024 / 409,
+            }}
+            contentFit="contain"
+          />
+        </ThemedView>
       }
     >
-      <ThemedView style={styles.container}>
-
+      <ThemedView
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
         <ThemedText style={styles.title}>
           Zwei-Faktor-Authentifizierung
         </ThemedText>
 
-        <OtpInput
-          ref={otpRef}
-          onComplete={(code) => handleVerify(code)}
-        />
+        <ThemedView
+          style={[
+            styles.otpContainer,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              borderWidth: 1,
+              borderRadius: 12,
+              padding: 16,
+            },
+          ]}
+        >
+          <OtpInput ref={otpRef} onComplete={(code) => handleVerify(code)} />
+        </ThemedView>
 
         {cooldown > 0 && (
-          <ThemedText style={styles.info}>
+          <ThemedText style={[styles.info, { color: colors.border }]}>
             Neuer Versuch in {cooldown}s
           </ThemedText>
         )}
 
         {attempts > 0 && attempts < MAX_ATTEMPTS && (
-          <ThemedText style={styles.info}>
+          <ThemedText style={[styles.info, { color: colors.border }]}>
             Versuch {attempts} / {MAX_ATTEMPTS}
           </ThemedText>
         )}
 
-        {error && <ThemedText style={styles.error}>{error}</ThemedText>}
-
+        {error && (
+          <ThemedText style={[styles.error, { color: colors.errorBackground }]}>
+            {error}
+          </ThemedText>
+        )}
       </ThemedView>
     </ParallaxScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, gap: 16 },
-  title: { fontSize: 22 },
-  codeContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  container: {
+    padding: 20,
+    gap: 16,
   },
-  codeInput: {
-    width: 45,
-    height: 55,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    textAlign: "center",
-    fontSize: 20,
-    borderRadius: 6,
+
+  title: {
+    fontSize: 22,
   },
+
+  otpContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   reactLogo: {
     height: 163,
     width: 408,
     marginTop: 40,
     marginLeft: 30,
   },
-  error: { color: "red" },
-  info: { color: "#666" },
+
+  error: {
+    fontSize: 14,
+  },
+
+  info: {
+    fontSize: 14,
+  },
 });

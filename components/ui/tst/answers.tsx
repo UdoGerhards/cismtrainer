@@ -2,10 +2,10 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import Checkbox from '@/components/ui/checkbox';
 import { Answer } from "@/scripts/model/if_answer";
-//import TestAnswer from '@/scripts/model/testModel/testAnswer';
 import client from '@/scripts/client';
 import React, { useState } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
+import { useTheme } from "@react-navigation/native";
 
 export default function Answers({
   answers,
@@ -15,21 +15,24 @@ export default function Answers({
   test,
   user
 }: {
-  answers: [],
+  answers: Answer[],
   correct: string,
   checked: boolean, 
   questionId: number,
   test: number,
-  user: object
+  user: any
 }) {
+
+  const { colors, dark } = useTheme();
 
   const [selected, setSelected] = useState<string | null>(null);
 
   const handleSelect = (answer: Answer) => {
-    if (checked) return; // verhindert erneutes Klicken nach Auswertung
+    if (checked) return;
+
     setSelected(answer._id);
 
-    let result = answer.answer.trim() === correct.trim()?true:false;
+    let result = answer.answer.trim() === correct.trim();
 
     if (typeof test === "undefined") {
       test = null;
@@ -44,17 +47,16 @@ export default function Answers({
         const isSelected = selected === answer._id;
         const isCorrect = answer.answer === correct;
 
-        let backgroundColor = "#fff";
+        // 🔥 Theme-basierte Farben
+        let backgroundColor = dark ? "#1e1e1e" : "#fff"; // Standard-Hintergrund
 
         if (checked) {
-          // richtige Antwort immer grün
           if (isCorrect) {
-            backgroundColor = "lightgreen";
+            backgroundColor = dark ? "#1b5e20" : "#d4edda"; // grün angepasst
           }
 
-          // falsche Auswahl rot
           if (isSelected && !isCorrect) {
-            backgroundColor = "salmon";
+            backgroundColor = dark ? "#7f1d1d" : "#f8d7da"; // rot angepasst
           }
         }
 
@@ -62,7 +64,7 @@ export default function Answers({
           <TouchableOpacity
             key={answer._id}
             onPress={() => handleSelect(answer)}
-            disabled={checked} // deaktiviert Touch
+            disabled={checked}
             style={[
               styles.answerContainer,
               { backgroundColor }
@@ -70,9 +72,9 @@ export default function Answers({
           >
             <Checkbox
               status={isSelected ? 'checked' : 'unchecked'}
-              disabled={checked} // deaktiviert Checkbox
-              color="#6200ee"
-              uncheckedColor="#757575"
+              disabled={checked}
+              color={colors.primary}
+              uncheckedColor={colors.border}
               onPress={() => handleSelect(answer)}
             />
 

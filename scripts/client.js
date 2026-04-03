@@ -26,21 +26,21 @@ class Client extends Base {
 
   getApiBase() {
     if (Platform.OS === "web") {
-      return "http://localhost/api";
+      return "https://smallbox/api";
     }
 
     const hostUri = Constants.expoConfig?.hostUri;
 
     if (hostUri) {
       const host = hostUri.split(":")[0];
-      return `http://${host}/api`;
+      return `https://${host}/api`;
     }
 
     if (Platform.OS === "android") {
-      return "http://10.0.2.2/api";
+      return "https://10.0.2.2/api";
     }
 
-    return "http://localhost/api";
+    return "https://localhost/api";
   }
 
   /*

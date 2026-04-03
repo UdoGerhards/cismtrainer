@@ -11,10 +11,14 @@ import OtpInput, { OtpInputRef } from "@/components/ui/OTPInput";
 import { useAuth } from "@/context/AuthContext";
 import client from "@/scripts/client";
 
+import { useTheme } from "@react-navigation/native";
+
 const MAX_ATTEMPTS = 5;
 const COOLDOWN_SECONDS = 30;
 
 export default function RegistrationScreen() {
+
+  const { colors } = useTheme(); // ✅ THEME
 
   const { refreshUser, logout } = useAuth();
   const router = useRouter();
@@ -59,6 +63,7 @@ export default function RegistrationScreen() {
 
     startSetup();
   }, []);
+
   // ⏱️ Countdown
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -69,27 +74,6 @@ export default function RegistrationScreen() {
 
     return () => clearInterval(timer);
   }, [cooldown]);
-
-  // ---------------------------------------------------------
-  // Input Handling
-  // ---------------------------------------------------------
-  const handleChange = (value: string, index: number) => {
-    if (!/^\d?$/.test(value)) return;
-
-    const newCode = [...code];
-    newCode[index] = value;
-    setCode(newCode);
-
-    if (value && index < 5) {
-      inputs.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === "Backspace" && !code[index] && index > 0) {
-      inputs.current[index - 1]?.focus();
-    }
-  };
 
   // ---------------------------------------------------------
   // Verify Setup
@@ -117,42 +101,47 @@ export default function RegistrationScreen() {
         setCooldown(COOLDOWN_SECONDS);
         setError("Code ungültig");
 
-        // 🔥 RESET + Fokus zurück
         otpRef.current?.reset();
-
         return;
       }
 
-      // ✅ Erfolg
       setVerified(true);
       await refreshUser();
 
-      /*
-      setTimeout(async () => {
-        await logout();
-        router.replace("/login");
-      }, 1500);
-      */
-
     } catch {
       setError("Verifizierung fehlgeschlagen");
-
-      // 🔥 auch hier reset
       otpRef.current?.reset();
     }
   };
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/CISM_logo_RGB-1024x409.png')}
-          style={styles.reactLogo}
-        />
-      }
+<ParallaxScrollView
+  style={{ backgroundColor: colors.background }}
+  contentContainerStyle={{ backgroundColor: colors.background }}
+  headerBackgroundColor={{
+    light: colors.headerImageBackground,
+    dark: colors.headerImageBackground,
+  }}
+  headerImage={
+    <ThemedView
+      style={{
+        padding: 20,
+        backgroundColor: colors.headerImageBackground,
+      }}
     >
-      <ThemedView style={styles.container}>
+      <Image
+        source={require('@/assets/images/CISM_logo_RGB-1024x409.png')}
+        style={{
+          width: "60%",          // 🔥 wie gewünscht
+          maxWidth: 480,         // 🔥 für Web
+          aspectRatio: 1024 / 409,
+        }}
+        contentFit="contain"
+      />
+    </ThemedView>
+  }
+>
+      <ThemedView style={[styles.container, { backgroundColor: colors.background }]}>
 
         <ThemedText style={styles.title}>
           Authenticator Registrierung
@@ -165,33 +154,42 @@ export default function RegistrationScreen() {
 
         {/* ✅ QR + Eingabe */}
         {qr && !verified && (
-          <>
+          <ThemedView
+            style={[
+              styles.card,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                borderWidth: 1,
+              },
+            ]}
+          >
             <Image source={{ uri: qr }} style={styles.qr} />
 
             <OtpInput
               ref={otpRef}
               onComplete={(code) => {
-                verifySetup(code); // 🔥 AUTO SUBMIT
+                verifySetup(code);
               }}
             />
 
             {cooldown > 0 && (
-              <ThemedText style={styles.info}>
+              <ThemedText style={[styles.info, { color: colors.border }]}>
                 Neuer Versuch in {cooldown}s
               </ThemedText>
             )}
 
             {attempts > 0 && attempts < MAX_ATTEMPTS && (
-              <ThemedText style={styles.info}>
+              <ThemedText style={[styles.info, { color: colors.border }]}>
                 Versuch {attempts} / {MAX_ATTEMPTS}
               </ThemedText>
             )}
-          </>
+          </ThemedView>
         )}
 
         {/* ✅ Erfolg */}
         {verified && (
-          <ThemedText style={styles.success}>
+          <ThemedText style={[styles.success, { color: colors.successBackground }]}>
             Registrierung erfolgreich ✅
             Weiterleitung zum Login...
           </ThemedText>
@@ -199,7 +197,7 @@ export default function RegistrationScreen() {
 
         {/* ❌ Fehler */}
         {error && (
-          <ThemedText style={styles.error}>
+          <ThemedText style={[styles.error, { color: colors.errorBackground }]}>
             {error}
           </ThemedText>
         )}
@@ -214,41 +212,40 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 16,
   },
+
   title: {
     fontSize: 22,
   },
-  codeContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+
+  card: {
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    gap: 12,
   },
-  codeInput: {
-    width: 45,
-    height: 55,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    textAlign: "center",
-    fontSize: 20,
-    borderRadius: 6,
-  },
+
   reactLogo: {
     height: 163,
     width: 408,
     marginTop: 40,
     marginLeft: 30,
   },
+
   qr: {
     width: 200,
     height: 200,
-    alignSelf: "center",
   },
+
   error: {
-    color: "red",
+    fontSize: 14,
   },
+
   success: {
-    color: "green",
     fontWeight: "bold",
+    fontSize: 14,
   },
+
   info: {
-    color: "#666",
+    fontSize: 14,
   },
 });

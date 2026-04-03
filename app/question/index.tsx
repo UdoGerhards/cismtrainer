@@ -1,30 +1,32 @@
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Image } from 'expo-image';
-import { Button, LogBox, StyleSheet } from 'react-native';
+import ParallaxScrollView from "@/components/parallax-scroll-view";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { Image } from "expo-image";
+import { Button, LogBox, StyleSheet } from "react-native";
 
 import { useEffect, useRef, useState } from "react";
 
-import Question from '@/components/ui/tst/question';
-import client from '@/scripts/client';
-import { QuestionItem } from '@/scripts/model/if_question';
+import Question from "@/components/ui/tst/question";
+import client from "@/scripts/client";
+import { QuestionItem } from "@/scripts/model/if_question";
 
 import { useAuth } from "@/context/AuthContext";
 import { Stack } from "expo-router";
 
 import ExplanationBox from "@/components/ui/tst/explanationBox";
 
-LogBox.ignoreLogs([
-  "props.pointerEvents is deprecated"
-]);
+import { useTheme } from "@react-navigation/native";
+
+LogBox.ignoreLogs(["props.pointerEvents is deprecated"]);
 
 export default function HomeScreen() {
-
   const { user, loading: authLoading } = useAuth();
+  const { colors } = useTheme();
 
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
-  const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
+  const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(
+    null,
+  );
 
   const [loading, setLoading] = useState(true);
   const [checked, setChecked] = useState(false);
@@ -34,7 +36,9 @@ export default function HomeScreen() {
   const [explainDisabled, setExplainDisabled] = useState(true);
 
   const [explanations, setExplanations] = useState<Record<string, string>>({});
-  const [loadingExplanation, setLoadingExplanation] = useState<string | null>(null);
+  const [loadingExplanation, setLoadingExplanation] = useState<string | null>(
+    null,
+  );
   const [expanded, setExpanded] = useState(false);
 
   const questionRef = useRef(null);
@@ -45,20 +49,17 @@ export default function HomeScreen() {
     setNextDisabled(true);
     setOkDisabled(false);
     setExplainDisabled(true);
-
     setExpanded(false);
 
-    client.fetchQuestion()
-      .then(data => {
+    client
+      .fetchQuestion()
+      .then((data) => {
         setQuestions(data);
         setChecked(false);
-
-        // ✅ FIX
         setCurrentQuestionId(data?._id || null);
-
         setLoading(false);
       })
-      .catch(err => console.error(err));
+      .catch((err) => console.error(err));
   };
 
   useEffect(() => {
@@ -88,17 +89,31 @@ export default function HomeScreen() {
       <Stack.Screen options={{ title: "Random Question" }} />
 
       <ParallaxScrollView
-        headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={{ backgroundColor: colors.background }}
+        headerBackgroundColor={{
+          light: colors.headerImageBackground,
+          dark: colors.headerImageBackground,
+        }}
         headerImage={
-          <Image
-          source={require('@/assets/images/CISM_logo_RGB-1024x409.png')}
-            style={styles.reactLogo}
-          />
+          <ThemedView
+            style={{
+              padding: 20,
+              backgroundColor: colors.headerImageBackground,
+            }}
+          >
+            <Image
+              source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
+              style={{
+                width: "60%", // 🔥 wie gewünscht
+                maxWidth: 480, // 🔥 für Web
+                aspectRatio: 1024 / 409,
+              }}
+              contentFit="contain"
+            />
+          </ThemedView>
         }
       >
-
-
-
         <Question
           ref={questionRef}
           question={questions}
@@ -108,26 +123,24 @@ export default function HomeScreen() {
 
         {/* BUTTONS */}
         <ThemedView style={styles.fixToText}>
-
-          {/* OK nur anzeigen wenn aktiv */}
           {!okDisabled && (
             <Button
               title="OK"
+              color={colors.primary}
               onPress={() => {
                 client.sendGivenAnswer();
                 setChecked(true);
                 setOkDisabled(true);
                 setNextDisabled(false);
-
                 setExplainDisabled(false);
               }}
             />
           )}
 
-          {/* Explain nur anzeigen wenn aktiv */}
           {!explainDisabled && (
             <Button
               title="Explain"
+              color={colors.primary}
               onPress={async () => {
                 if (!currentQuestionId) return;
 
@@ -141,16 +154,15 @@ export default function HomeScreen() {
 
                   const res = await client.getExplanation(currentQuestionId);
 
-                  setExplanations(prev => ({
+                  setExplanations((prev) => ({
                     ...prev,
-                    [currentQuestionId]: res || "Keine Erklärung vorhanden"
+                    [currentQuestionId]: res || "Keine Erklärung vorhanden",
                   }));
-
                 } catch (e) {
                   console.error(e);
-                  setExplanations(prev => ({
+                  setExplanations((prev) => ({
                     ...prev,
-                    [currentQuestionId]: "Fehler beim Laden der Erklärung"
+                    [currentQuestionId]: "Fehler beim Laden der Erklärung",
                   }));
                 } finally {
                   setLoadingExplanation(null);
@@ -159,16 +171,14 @@ export default function HomeScreen() {
             />
           )}
 
-          {/* Next bleibt immer sichtbar */}
-          {/* NEXT */}
           {!nextDisabled && (
             <Button
               title="Next"
+              color={colors.primary}
               onPress={loadNextQuestion}
               disabled={nextDisabled}
             />
           )}
-
         </ThemedView>
 
         <ExplanationBox
@@ -178,7 +188,6 @@ export default function HomeScreen() {
           explanations={explanations}
           styles={styles}
         />
-
       </ParallaxScrollView>
     </>
   );
@@ -186,8 +195,8 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   stepContainer: {
@@ -197,11 +206,11 @@ const styles = StyleSheet.create({
   reactLogo: {
     height: 163,
     width: 408,
-    marginTop:40,
-    marginLeft:30
+    marginTop: 40,
+    marginLeft: 30,
   },
   fixToText: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
 });

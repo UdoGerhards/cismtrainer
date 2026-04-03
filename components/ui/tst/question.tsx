@@ -7,20 +7,20 @@ import { StyleSheet } from 'react-native';
 
 function TestComponent(
   {
-    question,   // EIN Objekt
+    question,
     checked,
     test,
     user
   }: {
-    question?: QuestionItem,
+    question?: QuestionItem | null,
     checked: boolean,
-    test: number
-    user: object
+    test?: number,
+    user: any
   },
   ref: any
 ) {
 
-  // Wenn keine Frage vorhanden ist → nichts anzeigen
+  // ✅ Safety Check
   if (!question) {
     return (
       <ThemedView style={styles.stepContainer}>
@@ -31,18 +31,22 @@ function TestComponent(
 
   return (
     <ThemedView style={styles.stepContainer}>
+
       {/* 🔥 Fragetext */}
-      <ThemedText>{question.question}</ThemedText>
+      <ThemedText>
+        {question.question}
+      </ThemedText>
 
       {/* 🔥 Antworten */}
       <Answers
         answers={question.answers}
         correct={question.correct}
         checked={checked}
-        questionId={question._id}   // optional, falls Answers das braucht
+        questionId={question._id}
         test={test}
         user={user}
       />
+
     </ThemedView>
   );
 }
