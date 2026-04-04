@@ -1,10 +1,10 @@
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import Checkbox from '@/components/ui/checkbox';
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import Checkbox from "@/components/ui/checkbox";
 import { Answer } from "@/scripts/model/if_answer";
-import client from '@/scripts/client';
-import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import client from "@/scripts/client";
+import React, { useState } from "react";
+import { StyleSheet, TouchableOpacity } from "react-native";
 import { useTheme } from "@react-navigation/native";
 
 export default function Answers({
@@ -13,16 +13,15 @@ export default function Answers({
   checked,
   questionId,
   test,
-  user
+  user,
 }: {
-  answers: Answer[],
-  correct: string,
-  checked: boolean, 
-  questionId: number,
-  test: number,
-  user: any
+  answers: Answer[];
+  correct: string;
+  checked: boolean;
+  questionId: number;
+  test: number;
+  user: any;
 }) {
-
   const { colors, dark } = useTheme();
 
   const [selected, setSelected] = useState<string | null>(null);
@@ -32,31 +31,32 @@ export default function Answers({
 
     setSelected(answer._id);
 
-    let result = answer.answer.trim() === correct.trim();
+    const result = answer.answer.trim() === correct.trim();
 
-    if (typeof test === "undefined") {
-      test = null;
-    }
+    const safeTest = typeof test === "undefined" ? null : test;
 
-    client.setGivenAnswer(user.id, test, questionId, answer._id, result);
+    client.setGivenAnswer(user.id, safeTest, questionId, answer._id, result);
   };
 
   return (
     <ThemedView>
-      {answers.map(answer => {
+      {answers.map((answer) => {
         const isSelected = selected === answer._id;
         const isCorrect = answer.answer === correct;
 
-        // 🔥 Theme-basierte Farben
-        let backgroundColor = dark ? "#1e1e1e" : "#fff"; // Standard-Hintergrund
+        // 🔥 Basis-Hintergrund (Light/Dark sauber definiert)
+        let backgroundColor = colors.answerBackground
+          ? colors.answerBackground
+          : dark
+            ? "#1e1e1e"
+            : "#f5f5f5"; // 👈 kein hartes Weiß mehr
 
+        // ✅ Zustand nach Auswahl
         if (checked) {
           if (isCorrect) {
-            backgroundColor = dark ? "#1b5e20" : "#d4edda"; // grün angepasst
-          }
-
-          if (isSelected && !isCorrect) {
-            backgroundColor = dark ? "#7f1d1d" : "#f8d7da"; // rot angepasst
+            backgroundColor = dark ? "#1b5e20" : "#d4edda"; // grün
+          } else if (isSelected) {
+            backgroundColor = dark ? "#7f1d1d" : "#f8d7da"; // rot
           }
         }
 
@@ -67,20 +67,21 @@ export default function Answers({
             disabled={checked}
             style={[
               styles.answerContainer,
-              { backgroundColor }
+              {
+                backgroundColor,
+                borderColor: colors.border,
+              },
             ]}
           >
             <Checkbox
-              status={isSelected ? 'checked' : 'unchecked'}
+              status={isSelected ? "checked" : "unchecked"}
               disabled={checked}
               color={colors.primary}
               uncheckedColor={colors.border}
               onPress={() => handleSelect(answer)}
             />
 
-            <ThemedText style={{ marginLeft: 8 }}>
-              {answer.text}
-            </ThemedText>
+            <ThemedText style={styles.answerText}>{answer.text}</ThemedText>
           </TouchableOpacity>
         );
       })}
@@ -90,10 +91,14 @@ export default function Answers({
 
 const styles = StyleSheet.create({
   answerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
-    marginBottom: 8,
-    borderRadius: 8,
-  }
+    marginBottom: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  answerText: {
+    marginLeft: 8,
+  },
 });

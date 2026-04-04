@@ -13,6 +13,7 @@ export const LightTheme = {
     text: "#111111",
     border: "#e0e0e0",
     primary: "#3b82f6",
+    answerBackground: "#f0f0f0",
 
     success: "#16a34a", // kräftiges Grün
     error: "#dc2626", // kräftiges Rot
@@ -35,6 +36,7 @@ export const DarkTheme = {
     primary: "#60a5fa",
     success: "#22c55e",
     error: "#ef4444",
+    answerBackground: "#f0f0f0",
 
     successBackground: "#16a34a",
     errorBackground: "#dc2626",
