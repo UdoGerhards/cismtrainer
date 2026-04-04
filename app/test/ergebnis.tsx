@@ -6,8 +6,9 @@ import client from "@/scripts/client";
 import { Image } from "expo-image";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Platform } from "react-native";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
 
+import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@react-navigation/native";
 
@@ -107,178 +108,185 @@ export default function ErgebnisScreen() {
       : evaluation.wrongQuestions || [];
 
   return (
-    <FlatList
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{
-        paddingBottom: 40,
-        paddingHorizontal: 16,
+    <View style={{ flex: 1 }}>
+      <FlatList
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={{
+          paddingBottom: 40,
+          paddingHorizontal: 16,
 
-        // 🔥 Responsive Breite
-        width: "100%",
-        alignSelf: "center",
-        // maxWidth: Platform.OS === "web" ? "99%" : "100%",
-      }}
-      data={currentData}
-      keyExtractor={(item) => item._id}
-      ListHeaderComponent={
-        <>
-          {/* ✅ RESPONSIVE HEADER IMAGE */}
-          <ThemedView
-            style={{
-              padding: 20,
-              backgroundColor: colors.background,
-            }}
-          >
-            <Image
-              source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
+          // 🔥 Responsive Breite
+          width: "100%",
+          alignSelf: "center",
+          flexGrow: 1,
+          // maxWidth: Platform.OS === "web" ? "99%" : "100%",
+        }}
+        data={currentData}
+        keyExtractor={(item) => item._id}
+        ListHeaderComponent={
+          <>
+            {/* ✅ RESPONSIVE HEADER IMAGE */}
+            <ThemedView
               style={{
-                width: "60%", // 🔥 jetzt 60%
-                maxWidth: 480, // optional für große Screens
-                aspectRatio: 1024 / 409,
+                padding: 20,
+                backgroundColor: colors.background,
               }}
-              contentFit="contain"
-            />
-          </ThemedView>
-
-          {/* CHART CARD */}
-          <ThemedView
-            style={{
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-              borderWidth: 1,
-              borderRadius: 12,
-              padding: 16,
-              marginHorizontal: 16,
-            }}
-          >
-            <Pie data={pieData} />
-          </ThemedView>
-
-          {/* TABS */}
-          <ThemedView
-            style={[styles.tabsWrapper, { backgroundColor: colors.background }]}
-          >
-            <ThemedView style={styles.tabsRow}>
-              <Pressable
-                onPress={() => setActiveTab("correct")}
-                style={styles.tabItem}
-              >
-                <ThemedText
-                  style={[
-                    styles.tabText,
-                    activeTab === "correct"
-                      ? { color: colors.primary }
-                      : { color: colors.text, opacity: 0.5 },
-                  ]}
-                >
-                  CORRECT
-                </ThemedText>
-                {activeTab === "correct" && (
-                  <ThemedView
-                    style={[
-                      styles.tabUnderline,
-                      { backgroundColor: colors.primary },
-                    ]}
-                  />
-                )}
-              </Pressable>
-
-              <Pressable
-                onPress={() => setActiveTab("wrong")}
-                style={styles.tabItem}
-              >
-                <ThemedText
-                  style={[
-                    styles.tabText,
-                    activeTab === "wrong"
-                      ? { color: colors.primary }
-                      : { color: colors.text, opacity: 0.5 },
-                  ]}
-                >
-                  WRONG
-                </ThemedText>
-                {activeTab === "wrong" && (
-                  <ThemedView
-                    style={[
-                      styles.tabUnderline,
-                      { backgroundColor: colors.primary },
-                    ]}
-                  />
-                )}
-              </Pressable>
+            >
+              <Image
+                source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
+                style={{
+                  width: "60%", // 🔥 jetzt 60%
+                  maxWidth: 480, // optional für große Screens
+                  aspectRatio: 1024 / 409,
+                }}
+                contentFit="contain"
+              />
             </ThemedView>
 
+            {/* CHART CARD */}
+            <ThemedView
+              style={{
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                borderWidth: 1,
+                borderRadius: 12,
+                padding: 16,
+                marginHorizontal: 16,
+              }}
+            >
+              <Pie data={pieData} />
+            </ThemedView>
+
+            {/* TABS */}
             <ThemedView
               style={[
-                styles.tabDivider,
-                { backgroundColor: colors.border, opacity: 0.8 },
+                styles.tabsWrapper,
+                { backgroundColor: colors.background },
               ]}
-            />
-          </ThemedView>
-        </>
-      }
-      renderItem={({ item }) => {
-        const correctText = getCorrectAnswerText(item.answers, item.correct);
-        const userText = item.user;
-        const isCorrect = userText?.trim() === correctText?.trim();
-        const isExpanded = expandedId === item._id;
+            >
+              <ThemedView style={styles.tabsRow}>
+                <Pressable
+                  onPress={() => setActiveTab("correct")}
+                  style={styles.tabItem}
+                >
+                  <ThemedText
+                    style={[
+                      styles.tabText,
+                      activeTab === "correct"
+                        ? { color: colors.primary }
+                        : { color: colors.text, opacity: 0.5 },
+                    ]}
+                  >
+                    CORRECT
+                  </ThemedText>
+                  {activeTab === "correct" && (
+                    <ThemedView
+                      style={[
+                        styles.tabUnderline,
+                        { backgroundColor: colors.primary },
+                      ]}
+                    />
+                  )}
+                </Pressable>
 
-        return (
-          <Pressable
-            onPress={() => handlePress(item)}
-            style={({ hovered, pressed }) => [
-              styles.listItem,
-              {
-                borderColor: colors.border,
-                backgroundColor: hovered ? colors.card : colors.background,
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
-          >
-            <ThemedText style={styles.question}>{item.question}</ThemedText>
+                <Pressable
+                  onPress={() => setActiveTab("wrong")}
+                  style={styles.tabItem}
+                >
+                  <ThemedText
+                    style={[
+                      styles.tabText,
+                      activeTab === "wrong"
+                        ? { color: colors.primary }
+                        : { color: colors.text, opacity: 0.5 },
+                    ]}
+                  >
+                    WRONG
+                  </ThemedText>
+                  {activeTab === "wrong" && (
+                    <ThemedView
+                      style={[
+                        styles.tabUnderline,
+                        { backgroundColor: colors.primary },
+                      ]}
+                    />
+                  )}
+                </Pressable>
+              </ThemedView>
 
-            <ThemedView style={styles.row}>
-              <ThemedText style={[styles.label, { color: colors.text }]}>
-                Answer:
-              </ThemedText>
-              <ThemedText
+              <ThemedView
                 style={[
-                  styles.text,
-                  { color: colors.success, fontWeight: "600" },
+                  styles.tabDivider,
+                  { backgroundColor: colors.border, opacity: 0.8 },
                 ]}
-              >
-                {correctText}
-              </ThemedText>
+              />
             </ThemedView>
+          </>
+        }
+        renderItem={({ item }) => {
+          const correctText = getCorrectAnswerText(item.answers, item.correct);
+          const userText = item.user;
+          const isCorrect = userText?.trim() === correctText?.trim();
+          const isExpanded = expandedId === item._id;
 
-            <ThemedView style={styles.row}>
-              <ThemedText style={[styles.label, { color: colors.text }]}>
-                User:
-              </ThemedText>
-              <ThemedText
-                style={[
-                  styles.text,
-                  {
-                    color: isCorrect ? colors.success : colors.error,
-                    fontWeight: "600",
-                  },
-                ]}
-              >
-                {userText}
-              </ThemedText>
-            </ThemedView>
+          return (
+            <Pressable
+              onPress={() => handlePress(item)}
+              style={({ hovered, pressed }) => [
+                styles.listItem,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: hovered ? colors.card : colors.background,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <ThemedText style={styles.question}>{item.question}</ThemedText>
 
-            <ExplanationBox
-              isExpanded={isExpanded}
-              loadingExplanation={loadingExplanation}
-              itemId={item._id}
-              explanations={explanations}
-              styles={styles}
-            />
-          </Pressable>
-        );
-      }}
-    />
+              <ThemedView style={styles.row}>
+                <ThemedText style={[styles.label, { color: colors.text }]}>
+                  Answer:
+                </ThemedText>
+                <ThemedText
+                  style={[
+                    styles.text,
+                    { color: colors.success, fontWeight: "600" },
+                  ]}
+                >
+                  {correctText}
+                </ThemedText>
+              </ThemedView>
+
+              <ThemedView style={styles.row}>
+                <ThemedText style={[styles.label, { color: colors.text }]}>
+                  User:
+                </ThemedText>
+                <ThemedText
+                  style={[
+                    styles.text,
+                    {
+                      color: isCorrect ? colors.success : colors.error,
+                      fontWeight: "600",
+                    },
+                  ]}
+                >
+                  {userText}
+                </ThemedText>
+              </ThemedView>
+
+              <ExplanationBox
+                isExpanded={isExpanded}
+                loadingExplanation={loadingExplanation}
+                itemId={item._id}
+                explanations={explanations}
+                styles={styles}
+              />
+            </Pressable>
+          );
+        }}
+      />
+      <Footer />
+    </View>
   );
 }
 

@@ -30,7 +30,10 @@ type AuthContextType = {
   loading: boolean;
   isAuthenticated: boolean;
 
-  login: (username?: string, password?: string) => Promise<"ok" | "2fa" | "error">;
+  login: (
+    username?: string,
+    password?: string,
+  ) => Promise<"ok" | "2fa" | "error">;
   verify2FA: (code: string) => Promise<boolean>;
 
   logout: () => Promise<void>;
@@ -135,7 +138,10 @@ export function AuthProvider({ children }: any) {
   LOGIN
   ==========================================
   */
-  async function login(username?: string, password?: string): Promise<"ok" | "2fa" | "error"> {
+  async function login(
+    username?: string,
+    password?: string,
+  ): Promise<"ok" | "2fa" | "error"> {
     try {
       await deleteItem(TOKEN_KEY);
       await deleteItem(USER_KEY);
@@ -181,9 +187,6 @@ export function AuthProvider({ children }: any) {
 
     try {
       const response = await client.verify2FA(tempToken, code);
-
-      console.log("🔐 VERIFY RESULT:", response);
-      console.log("SET TOKEN:", response.token);
 
       if (response?.success && response?.token && response?.user) {
         // 🔥 STATE FIRST (CRITICAL FIX)
@@ -305,6 +308,7 @@ function AuthGuard() {
       setUser(null);
     };
 
+    /*    
     console.log("🛡️ GUARD", {
       token,
       user,
@@ -312,6 +316,8 @@ function AuthGuard() {
       tempToken,
       route: first,
     });
+
+*/
 
     // 1. 2FA pending
     if (tempToken) {
@@ -344,7 +350,6 @@ function AuthGuard() {
         router.replace("/");
       }
     }
-
   }, [user, loading, isAuthenticated, tempToken, segments]);
 
   return null;

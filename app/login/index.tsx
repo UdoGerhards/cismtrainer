@@ -1,7 +1,6 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { Button, StyleSheet, TextInput } from "react-native";
+import { Button, StyleSheet, TextInput, View } from "react-native";
 
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
@@ -10,6 +9,9 @@ import { useAuth } from "@/context/AuthContext";
 import { Image } from "expo-image";
 
 import { useFocusEffect, useTheme } from "@react-navigation/native";
+
+import Footer from "@/components/Footer";
+import PasswordInput from "@/components/passwordInput";
 
 export default function LoginScreen() {
   const { colors } = useTheme(); // ✅ THEME
@@ -61,59 +63,39 @@ export default function LoginScreen() {
   };
 
   return (
-    <ParallaxScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ backgroundColor: colors.background }}
-      headerBackgroundColor={{
-        light: colors.card,
-        dark: colors.card,
-      }}
-      headerImage={
-        <Image
-          source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-          style={styles.reactLogo}
-        />
-      }
-    >
-      <ThemedView
-        style={[styles.container, { backgroundColor: colors.background }]}
+    <View style={{ flex: 1 }}>
+      <ParallaxScrollView
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={{
+          backgroundColor: colors.background,
+          flexGrow: 1,
+        }}
+        headerBackgroundColor={{
+          light: colors.card,
+          dark: colors.card,
+        }}
+        headerImage={
+          <Image
+            source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
+            style={styles.reactLogo}
+          />
+        }
       >
-        <ThemedText style={styles.label}>E-Mail:</ThemedText>
-        <TextInput
-          value={email}
-          onChangeText={(text) => {
-            setEmail(text);
-            setError("");
-          }}
-          placeholder="E-Mail"
-          placeholderTextColor={colors.border}
-          autoCapitalize="none"
-          style={[
-            styles.input,
-            {
-              borderColor: colors.border,
-              color: colors.text,
-              backgroundColor: colors.card,
-              width: "100%",
-              maxWidth: 400,
-            },
-          ]}
-        />
-
-        <ThemedText style={styles.label}>Passwort:</ThemedText>
-
-        <ThemedView style={styles.inputWrapper}>
+        <ThemedView
+          style={[styles.container, { backgroundColor: colors.background }]}
+        >
+          <ThemedText style={styles.label}>E-Mail:</ThemedText>
           <TextInput
-            value={password}
+            value={email}
             onChangeText={(text) => {
-              setPassword(text);
+              setEmail(text);
               setError("");
             }}
-            placeholder="Passwort"
+            placeholder="E-Mail"
             placeholderTextColor={colors.border}
-            secureTextEntry={!showPassword}
+            autoCapitalize="none"
             style={[
-              styles.inputWithIcon,
+              styles.input,
               {
                 borderColor: colors.border,
                 color: colors.text,
@@ -122,34 +104,40 @@ export default function LoginScreen() {
                 maxWidth: 400,
               },
             ]}
+          />
+
+          <ThemedText style={styles.label}>Passwort:</ThemedText>
+
+          <PasswordInput
+            value={password}
+            onChangeText={(text) => {
+              setPassword(text);
+              setError("");
+            }}
             returnKeyType="done"
             onSubmitEditing={handleLogin}
           />
 
-          <Ionicons
-            name={showPassword ? "eye-off" : "eye"}
-            size={22}
-            style={[styles.icon, { color: colors.border }]}
-            onPress={() => setShowPassword((prev) => !prev)}
-          />
-        </ThemedView>
+          {error ? (
+            <ThemedText
+              style={[styles.error, { color: colors.errorBackground }]}
+            >
+              {error}
+            </ThemedText>
+          ) : null}
 
-        {error ? (
-          <ThemedText style={[styles.error, { color: colors.errorBackground }]}>
-            {error}
-          </ThemedText>
-        ) : null}
-
-        <ThemedView style={styles.fixToText}>
-          <Button
-            title="Login"
-            onPress={handleLogin}
-            disabled={!isFormValid}
-            color={isFormValid ? colors.primary : colors.border}
-          />
+          <ThemedView style={styles.fixToText}>
+            <Button
+              title="Login"
+              onPress={handleLogin}
+              disabled={!isFormValid}
+              color={isFormValid ? colors.primary : colors.border}
+            />
+          </ThemedView>
         </ThemedView>
-      </ThemedView>
-    </ParallaxScrollView>
+      </ParallaxScrollView>
+      <Footer />
+    </View>
   );
 }
 

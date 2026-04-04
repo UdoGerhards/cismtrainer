@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, StyleSheet, TextInput } from "react-native";
+import { Button, StyleSheet, TextInput, View } from "react-native";
 
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
@@ -10,11 +10,12 @@ import { useAuth } from "@/context/AuthContext";
 import client from "@/scripts/client";
 import { Image } from "expo-image";
 
-import { useRouter } from "expo-router";
+import Footer from "@/components/Footer";
 import { useTheme } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 
 export default function ChangePasswordScreen() {
-  const { colors } = useTheme(); // ✅ THEME
+  const { colors } = useTheme();
 
   const { refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -119,132 +120,131 @@ export default function ChangePasswordScreen() {
   }, []);
 
   return (
-    <ParallaxScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ backgroundColor: colors.background }}
-      headerBackgroundColor={{
-        light: colors.headerImageBackground,
-        dark: colors.headerImageBackground,
-      }}
-      headerImage={
-        <ThemedView
-          style={{
-            padding: 20,
-            backgroundColor: colors.headerImageBackground,
-          }}
-        >
+    <View style={{ flex: 1 }}>
+      <ParallaxScrollView
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={{
+          backgroundColor: colors.background,
+          flexGrow: 1,
+        }}
+        headerBackgroundColor={{
+          light: colors.card,
+          dark: colors.card,
+        }}
+        headerImage={
           <Image
             source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={{
-              width: "60%", // 🔥 wie gewünscht
-              maxWidth: 480, // 🔥 für Web
-              aspectRatio: 1024 / 409,
-            }}
-            contentFit="contain"
+            style={styles.reactLogo}
           />
-        </ThemedView>
-      }
-    >
-      <ThemedView
-        style={[styles.container, { backgroundColor: colors.background }]}
+        }
       >
-        <ThemedText style={styles.title}>Passwort ändern</ThemedText>
+        <ThemedView
+          style={[styles.container, { backgroundColor: colors.background }]}
+        >
+          <ThemedText style={styles.title}>Passwort ändern</ThemedText>
 
-        <ThemedText style={styles.label}>Neues Passwort:</ThemedText>
+          {/* PASSWORD */}
+          <ThemedText style={styles.label}>Neues Passwort:</ThemedText>
 
-        <ThemedView style={styles.inputWrapper}>
-          <TextInput
-            ref={passwordRef}
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              setError("");
-            }}
-            secureTextEntry={!showPassword}
-            placeholder="Neues Passwort"
-            placeholderTextColor={colors.border}
-            style={[
-              styles.inputWithIcon,
-              {
-                borderColor: colors.border,
-                color: colors.text,
-                backgroundColor: colors.card,
-                width: "100%",
-                maxWidth: 400,
-              },
-            ]}
-          />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              ref={passwordRef}
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                setError("");
+              }}
+              secureTextEntry={!showPassword}
+              placeholder="Neues Passwort"
+              placeholderTextColor={colors.border}
+              style={[
+                styles.input,
+                {
+                  borderColor: colors.border,
+                  color: colors.text,
+                  backgroundColor: colors.card,
+                },
+              ]}
+            />
 
-          <Ionicons
-            name={showPassword ? "eye-off" : "eye"}
-            size={22}
-            style={[styles.icon, { color: colors.border }]}
-            onPress={() => setShowPassword((prev) => !prev)}
-          />
+            <Ionicons
+              name={showPassword ? "eye-off" : "eye"}
+              size={22}
+              color={colors.border}
+              style={styles.icon}
+              onPress={() => setShowPassword((prev) => !prev)}
+            />
+          </View>
+
+          {/* CONFIRM */}
+          <ThemedText style={styles.label}>Passwort bestätigen:</ThemedText>
+
+          <View style={styles.inputWrapper}>
+            <TextInput
+              value={confirm}
+              onChangeText={(text) => {
+                setConfirm(text);
+                setError("");
+              }}
+              secureTextEntry={!showPassword}
+              placeholder="Wiederholen"
+              placeholderTextColor={colors.border}
+              style={[
+                styles.input,
+                {
+                  borderColor: colors.border,
+                  color: colors.text,
+                  backgroundColor: colors.card,
+                },
+              ]}
+            />
+
+            <Ionicons
+              name={showPassword ? "eye-off" : "eye"}
+              size={22}
+              color={colors.border}
+              style={styles.icon}
+              onPress={() => setShowPassword((prev) => !prev)}
+            />
+          </View>
+
+          {/* VALIDATION */}
+          {!isValid && password.length > 0 && (
+            <ThemedText
+              style={[styles.error, { color: colors.errorBackground }]}
+            >
+              Passwort ungültig oder stimmt nicht überein (min. 8 Zeichen)
+            </ThemedText>
+          )}
+
+          {error && (
+            <ThemedText
+              style={[styles.error, { color: colors.errorBackground }]}
+            >
+              {error}
+            </ThemedText>
+          )}
+
+          {success && (
+            <ThemedText
+              style={[styles.success, { color: colors.successBackground }]}
+            >
+              Passwort erfolgreich geändert ✅
+            </ThemedText>
+          )}
+
+          <View style={styles.button}>
+            <Button
+              title={loading ? "Wird geändert..." : "Passwort ändern"}
+              onPress={handleChangePassword}
+              disabled={!isValid || loading}
+              color={colors.primary}
+            />
+          </View>
         </ThemedView>
-
-        <ThemedText style={styles.label}>Passwort bestätigen:</ThemedText>
-
-        <ThemedView style={styles.inputWrapper}>
-          <TextInput
-            value={confirm}
-            onChangeText={(text) => {
-              setConfirm(text);
-              setError("");
-            }}
-            secureTextEntry={!showPassword}
-            placeholder="Wiederholen"
-            placeholderTextColor={colors.border}
-            style={[
-              styles.inputWithIcon,
-              {
-                borderColor: colors.border,
-                color: colors.text,
-                backgroundColor: colors.card,
-                width: "100%",
-                maxWidth: 400,
-              },
-            ]}
-          />
-
-          <Ionicons
-            name={showPassword ? "eye-off" : "eye"}
-            size={22}
-            style={[styles.icon, { color: colors.border }]}
-            onPress={() => setShowPassword((prev) => !prev)}
-          />
-        </ThemedView>
-
-        {!isValid && password.length > 0 && (
-          <ThemedText style={[styles.error, { color: colors.errorBackground }]}>
-            Passwort ungültig oder stimmt nicht überein (min. 8 Zeichen)
-          </ThemedText>
-        )}
-
-        {error ? (
-          <ThemedText style={[styles.error, { color: colors.errorBackground }]}>
-            {error}
-          </ThemedText>
-        ) : null}
-
-        {success ? (
-          <ThemedText
-            style={[styles.success, { color: colors.successBackground }]}
-          >
-            Passwort erfolgreich geändert ✅
-          </ThemedText>
-        ) : null}
-
-        <ThemedView style={styles.button}>
-          <Button
-            title={loading ? "Wird geändert..." : "Passwort ändern"}
-            onPress={handleChangePassword}
-            disabled={!isValid || loading}
-            color={colors.primary}
-          />
-        </ThemedView>
-      </ThemedView>
-    </ParallaxScrollView>
+      </ParallaxScrollView>
+      <Footer />
+    </View>
   );
 }
 
@@ -280,18 +280,20 @@ const styles = StyleSheet.create({
   inputWrapper: {
     position: "relative",
     justifyContent: "center",
+    width: "100%",
+    maxWidth: 400,
   },
 
-  inputWithIcon: {
+  input: {
     borderWidth: 1,
-    padding: 10,
-    paddingRight: 40,
+    padding: 12,
+    paddingRight: 45, // 🔥 Platz für Icon
     borderRadius: 8,
   },
 
   icon: {
     position: "absolute",
-    right: 10,
+    right: 12,
   },
 
   reactLogo: {

@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
@@ -10,13 +10,14 @@ import { Image } from "expo-image";
 import OtpInput, { OtpInputRef } from "@/components/ui/OTPInput";
 import { useAuth } from "@/context/AuthContext";
 
+import Footer from "@/components/Footer";
 import { useTheme } from "@react-navigation/native";
 
 const MAX_ATTEMPTS = 5;
 const COOLDOWN_SECONDS = 30;
 
 export default function TwoFactorScreen() {
-  const { colors } = useTheme(); // ✅ THEME
+  const { colors } = useTheme();
   const { verify2FA, tempToken } = useAuth();
   const router = useRouter();
 
@@ -28,14 +29,12 @@ export default function TwoFactorScreen() {
 
   const otpRef = useRef<OtpInputRef>(null);
 
-  // 🔐 redirect if no tempToken
   useEffect(() => {
     if (!tempToken) {
       router.replace("/login");
     }
   }, [tempToken]);
 
-  // ⏱️ Countdown
   useEffect(() => {
     if (cooldown <= 0) return;
 
@@ -70,6 +69,8 @@ export default function TwoFactorScreen() {
         otpRef.current?.reset();
         return;
       }
+
+      otpRef.current?.reset();
     } catch {
       setError("Verifizierung fehlgeschlagen");
       otpRef.current?.reset();
@@ -79,73 +80,72 @@ export default function TwoFactorScreen() {
   };
 
   return (
-    <ParallaxScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ backgroundColor: colors.background }}
-      headerBackgroundColor={{
-        light: colors.headerImageBackground,
-        dark: colors.headerImageBackground,
-      }}
-      headerImage={
-        <ThemedView
-          style={{
-            padding: 20,
-            backgroundColor: colors.headerImageBackground,
-          }}
-        >
+    <View style={{ flex: 1 }}>
+      <ParallaxScrollView
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={{
+          backgroundColor: colors.background,
+          flexGrow: 1,
+        }}
+        headerBackgroundColor={{
+          light: colors.card,
+          dark: colors.card,
+        }}
+        headerImage={
           <Image
             source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={{
-              width: "60%", // 🔥 wie gewünscht
-              maxWidth: 480, // 🔥 für Web
-              aspectRatio: 1024 / 409,
-            }}
-            contentFit="contain"
+            style={styles.reactLogo}
           />
-        </ThemedView>
-      }
-    >
-      <ThemedView
-        style={[styles.container, { backgroundColor: colors.background }]}
+        }
       >
-        <ThemedText style={styles.title}>
-          Zwei-Faktor-Authentifizierung
-        </ThemedText>
-
         <ThemedView
-          style={[
-            styles.otpContainer,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-              borderWidth: 1,
-              borderRadius: 12,
-              padding: 16,
-            },
-          ]}
+          style={[styles.container, { backgroundColor: colors.background }]}
         >
-          <OtpInput ref={otpRef} onComplete={(code) => handleVerify(code)} />
+          <ThemedText style={styles.title}>
+            Zwei-Faktor-Authentifizierung
+          </ThemedText>
+
+          {/* 🔥 Wrapper sorgt für saubere Breite */}
+          <ThemedView style={styles.otpWrapper}>
+            <ThemedView
+              style={[
+                styles.otpContainer,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <OtpInput
+                ref={otpRef}
+                onComplete={(code) => handleVerify(code)}
+              />
+            </ThemedView>
+          </ThemedView>
+
+          {cooldown > 0 && (
+            <ThemedText style={[styles.info, { color: colors.border }]}>
+              Neuer Versuch in {cooldown}s
+            </ThemedText>
+          )}
+
+          {attempts > 0 && attempts < MAX_ATTEMPTS && (
+            <ThemedText style={[styles.info, { color: colors.border }]}>
+              Versuch {attempts} / {MAX_ATTEMPTS}
+            </ThemedText>
+          )}
+
+          {error && (
+            <ThemedText
+              style={[styles.error, { color: colors.errorBackground }]}
+            >
+              {error}
+            </ThemedText>
+          )}
         </ThemedView>
-
-        {cooldown > 0 && (
-          <ThemedText style={[styles.info, { color: colors.border }]}>
-            Neuer Versuch in {cooldown}s
-          </ThemedText>
-        )}
-
-        {attempts > 0 && attempts < MAX_ATTEMPTS && (
-          <ThemedText style={[styles.info, { color: colors.border }]}>
-            Versuch {attempts} / {MAX_ATTEMPTS}
-          </ThemedText>
-        )}
-
-        {error && (
-          <ThemedText style={[styles.error, { color: colors.errorBackground }]}>
-            {error}
-          </ThemedText>
-        )}
-      </ThemedView>
-    </ParallaxScrollView>
+      </ParallaxScrollView>
+      <Footer />
+    </View>
   );
 }
 
@@ -157,11 +157,32 @@ const styles = StyleSheet.create({
 
   title: {
     fontSize: 22,
+    textAlign: "center", // 🔥 sieht besser aus
+  },
+
+  // 🔥 NEU: kontrolliert die Gesamtbreite
+  otpWrapper: {
+    width: "100%",
+    maxWidth: 400,
+    alignSelf: "center",
   },
 
   otpContainer: {
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+  },
+
+  error: {
+    fontSize: 14,
+    textAlign: "center",
+  },
+
+  info: {
+    fontSize: 14,
+    textAlign: "center",
   },
 
   reactLogo: {
@@ -169,13 +190,5 @@ const styles = StyleSheet.create({
     width: 408,
     marginTop: 40,
     marginLeft: 30,
-  },
-
-  error: {
-    fontSize: 14,
-  },
-
-  info: {
-    fontSize: 14,
   },
 });

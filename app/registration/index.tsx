@@ -1,23 +1,23 @@
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Image } from 'expo-image';
+import ParallaxScrollView from "@/components/parallax-scroll-view";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { Image } from "expo-image";
 
 import OtpInput, { OtpInputRef } from "@/components/ui/OTPInput";
 import { useAuth } from "@/context/AuthContext";
 import client from "@/scripts/client";
 
+import Footer from "@/components/Footer";
 import { useTheme } from "@react-navigation/native";
 
 const MAX_ATTEMPTS = 5;
 const COOLDOWN_SECONDS = 30;
 
 export default function RegistrationScreen() {
-
   const { colors } = useTheme(); // ✅ THEME
 
   const { refreshUser, logout } = useAuth();
@@ -107,7 +107,6 @@ export default function RegistrationScreen() {
 
       setVerified(true);
       await refreshUser();
-
     } catch {
       setError("Verifizierung fehlgeschlagen");
       otpRef.current?.reset();
@@ -115,95 +114,90 @@ export default function RegistrationScreen() {
   };
 
   return (
-<ParallaxScrollView
-  style={{ backgroundColor: colors.background }}
-  contentContainerStyle={{ backgroundColor: colors.background }}
-  headerBackgroundColor={{
-    light: colors.headerImageBackground,
-    dark: colors.headerImageBackground,
-  }}
-  headerImage={
-    <ThemedView
-      style={{
-        padding: 20,
-        backgroundColor: colors.headerImageBackground,
-      }}
-    >
-      <Image
-        source={require('@/assets/images/CISM_logo_RGB-1024x409.png')}
-        style={{
-          width: "60%",          // 🔥 wie gewünscht
-          maxWidth: 480,         // 🔥 für Web
-          aspectRatio: 1024 / 409,
+    <View style={{ flex: 1 }}>
+      <ParallaxScrollView
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={{
+          backgroundColor: colors.background,
+          flexGrow: 1,
         }}
-        contentFit="contain"
-      />
-    </ThemedView>
-  }
->
-      <ThemedView style={[styles.container, { backgroundColor: colors.background }]}>
-
-        <ThemedText style={styles.title}>
-          Authenticator Registrierung
-        </ThemedText>
-
-        {/* 🔄 Loading */}
-        {loading && (
-          <ThemedText>QR-Code wird geladen...</ThemedText>
-        )}
-
-        {/* ✅ QR + Eingabe */}
-        {qr && !verified && (
-          <ThemedView
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                borderWidth: 1,
-              },
-            ]}
-          >
-            <Image source={{ uri: qr }} style={styles.qr} />
-
-            <OtpInput
-              ref={otpRef}
-              onComplete={(code) => {
-                verifySetup(code);
-              }}
-            />
-
-            {cooldown > 0 && (
-              <ThemedText style={[styles.info, { color: colors.border }]}>
-                Neuer Versuch in {cooldown}s
-              </ThemedText>
-            )}
-
-            {attempts > 0 && attempts < MAX_ATTEMPTS && (
-              <ThemedText style={[styles.info, { color: colors.border }]}>
-                Versuch {attempts} / {MAX_ATTEMPTS}
-              </ThemedText>
-            )}
-          </ThemedView>
-        )}
-
-        {/* ✅ Erfolg */}
-        {verified && (
-          <ThemedText style={[styles.success, { color: colors.successBackground }]}>
-            Registrierung erfolgreich ✅
-            Weiterleitung zum Login...
+        headerBackgroundColor={{
+          light: colors.card,
+          dark: colors.card,
+        }}
+        headerImage={
+          <Image
+            source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
+            style={styles.reactLogo}
+          />
+        }
+      >
+        <ThemedView
+          style={[styles.container, { backgroundColor: colors.background }]}
+        >
+          <ThemedText style={styles.title}>
+            Authenticator Registrierung
           </ThemedText>
-        )}
 
-        {/* ❌ Fehler */}
-        {error && (
-          <ThemedText style={[styles.error, { color: colors.errorBackground }]}>
-            {error}
-          </ThemedText>
-        )}
+          {/* 🔄 Loading */}
+          {loading && <ThemedText>QR-Code wird geladen...</ThemedText>}
 
-      </ThemedView>
-    </ParallaxScrollView>
+          {/* ✅ QR + Eingabe */}
+          {qr && !verified && (
+            <ThemedView
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  borderWidth: 1,
+                },
+              ]}
+            >
+              <Image source={{ uri: qr }} style={styles.qr} />
+
+              <OtpInput
+                ref={otpRef}
+                onComplete={(code) => {
+                  verifySetup(code);
+                }}
+              />
+
+              {cooldown > 0 && (
+                <ThemedText style={[styles.info, { color: colors.border }]}>
+                  Neuer Versuch in {cooldown}s
+                </ThemedText>
+              )}
+
+              {attempts > 0 && attempts < MAX_ATTEMPTS && (
+                <ThemedText style={[styles.info, { color: colors.border }]}>
+                  Versuch {attempts} / {MAX_ATTEMPTS}
+                </ThemedText>
+              )}
+            </ThemedView>
+          )}
+
+          {/* ✅ Erfolg */}
+          {verified && (
+            <ThemedText
+              style={[styles.success, { color: colors.successBackground }]}
+            >
+              Registrierung erfolgreich ✅ Weiterleitung zum Login...
+            </ThemedText>
+          )}
+
+          {/* ❌ Fehler */}
+          {error && (
+            <ThemedText
+              style={[styles.error, { color: colors.errorBackground }]}
+            >
+              {error}
+            </ThemedText>
+          )}
+        </ThemedView>
+      </ParallaxScrollView>
+      <Footer />
+    </View>
   );
 }
 

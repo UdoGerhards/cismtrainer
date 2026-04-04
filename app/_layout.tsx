@@ -1,6 +1,5 @@
+import { DarkTheme, LightTheme } from "@/constants/theme";
 import { ThemeProvider, useTheme } from "@react-navigation/native";
-
-import { LightTheme, DarkTheme } from "@/constants/theme";
 
 import { Drawer } from "expo-router/drawer";
 import { StatusBar } from "expo-status-bar";
@@ -11,6 +10,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { usePathname, useRouter } from "expo-router";
 import {
   ActivityIndicator,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -18,7 +18,7 @@ import {
 } from "react-native";
 
 import { DrawerContentScrollView } from "@react-navigation/drawer";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -33,29 +33,24 @@ function DrawerItem({
   onPress,
   active,
   indent = false,
-  muted = false,
-  icon,
 }: {
   label: string;
   onPress: () => void;
   active?: boolean;
   indent?: boolean;
-  muted?: boolean;
-  icon?: string;
 }) {
   const { colors } = useTheme();
 
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
       style={[
         styles.itemContainer,
         indent && styles.indent,
         active && {
           backgroundColor: colors.primary + "25",
-          borderWidth: 1,
-          borderColor: colors.primary + "40",
+          borderRadius: 10,
         },
       ]}
     >
@@ -63,11 +58,12 @@ function DrawerItem({
         style={[
           styles.itemText,
           { color: colors.text },
-          active && { color: colors.primary, fontWeight: "600" },
-          muted && { color: colors.text, opacity: 0.4 },
+          active && {
+            color: colors.primary,
+            fontWeight: "600",
+          },
         ]}
       >
-        {icon ? `${icon} ` : ""}
         {label}
       </Text>
     </TouchableOpacity>
@@ -91,11 +87,8 @@ function SectionHeader({
 
   return (
     <TouchableOpacity onPress={toggle} style={styles.sectionHeader}>
-      <Text style={[styles.sectionTitle, { color: colors.text, opacity: 0.6 }]}>
-        {title}
-      </Text>
-      <Text style={{ color: colors.text, opacity: 0.6 }}>
-        {open ? "▼" : "▶"}
+      <Text style={{ color: colors.text }}>
+        {open ? "▼ " : "▶ "} {title}
       </Text>
     </TouchableOpacity>
   );
@@ -105,29 +98,25 @@ function SectionHeader({
 // 🔹 CUSTOM DRAWER
 // ======================================================
 
-function CustomDrawerContent({ theme, toggleTheme }: any) {
+function CustomDrawerContent() {
   const router = useRouter();
   const pathname = usePathname();
-  const { logout } = useAuth();
   const { colors } = useTheme();
+  const { user } = useAuth(); // 🔥 USER holen
 
-  const [quizOpen, setQuizOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [quizOpen, setQuizOpen] = useState(true);
+  const [adminOpen, setAdminOpen] = useState(false);
 
-  const isActive = (path: string) => pathname.startsWith(path);
+  const isActive = (path: string) =>
+    pathname === path || pathname.startsWith(path + "/");
 
-  const handleLogout = async () => {
-    await logout();
-    router.replace("/login");
-  };
+  const isAdmin = user?.role === "admin";
 
   return (
     <DrawerContentScrollView
       contentContainerStyle={[
         styles.container,
-        {
-          backgroundColor: colors.card,
-        },
+        { backgroundColor: colors.card },
       ]}
     >
       <DrawerItem
@@ -136,12 +125,7 @@ function CustomDrawerContent({ theme, toggleTheme }: any) {
         onPress={() => router.push("/")}
       />
 
-      <View
-        style={[
-          styles.divider,
-          { backgroundColor: colors.border, opacity: 0.6 },
-        ]}
-      />
+      <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
       <SectionHeader
         title="QUIZ"
@@ -167,71 +151,130 @@ function CustomDrawerContent({ theme, toggleTheme }: any) {
         </>
       )}
 
-      <View
-        style={[
-          styles.divider,
-          { backgroundColor: colors.border, opacity: 0.6 },
-        ]}
-      />
-
-      <SectionHeader
-        title="PROFILE"
-        open={profileOpen}
-        toggle={() => setProfileOpen(!profileOpen)}
-      />
-
-      {profileOpen && (
+      {/* 🔥 ADMIN nur für Admin */}
+      {isAdmin && (
         <>
-          <DrawerItem
-            label="Change-Password"
-            indent
-            active={isActive("/change-password")}
-            onPress={() => router.push("/change-password")}
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+          <SectionHeader
+            title="ADMIN"
+            open={adminOpen}
+            toggle={() => setAdminOpen(!adminOpen)}
           />
 
-          <DrawerItem
-            icon={theme === "light" ? "🌙" : "☀️"}
-            label={theme === "light" ? "Dark" : "Light"}
-            indent
-            onPress={toggleTheme}
-          />
+          {adminOpen && (
+            <>
+              <DrawerItem
+                label="User Management"
+                indent
+                active={isActive("/maintainance")}
+                onPress={() => router.push("/maintainance")}
+              />
+
+              <DrawerItem
+                label="TestManagement"
+                indent
+                active={isActive("/")}
+                onPress={() => router.push("/")}
+              />
+            </>
+          )}
         </>
       )}
-
-      <View
-        style={[
-          styles.divider,
-          { backgroundColor: colors.border, opacity: 0.6 },
-        ]}
-      />
-
-      <DrawerItem label="Logout" onPress={handleLogout} muted icon="⊘" />
     </DrawerContentScrollView>
   );
 }
 
 // ======================================================
-// 🔹 HEADER COMPONENT
+// 🔹 HEADER WITH DROPDOWN
 // ======================================================
 
-function HeaderRight({ user, router }: any) {
+function HeaderRight({ user, router, theme, setTheme, logout }: any) {
   const { colors } = useTheme();
+  const [open, setOpen] = useState(false);
+
+  const handleSwitch = async (value: boolean) => {
+    const newTheme = value ? "dark" : "light";
+    setTheme(newTheme);
+    await AsyncStorage.setItem(THEME_KEY, newTheme);
+  };
 
   return (
-    <TouchableOpacity
-      onPress={() => router.push("/profile")}
-      style={styles.headerRight}
-    >
-      <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-        <Text style={styles.avatarText}>
-          {user?.firstname?.charAt(0)?.toUpperCase() || "U"}
-        </Text>
-      </View>
+    <View>
+      <TouchableOpacity onPress={() => setOpen(!open)}>
+        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+          <Text style={styles.avatarText}>
+            {user?.firstname?.charAt(0)?.toUpperCase() || "U"}
+          </Text>
+        </View>
+      </TouchableOpacity>
 
-      <Text style={[styles.headerUser, { color: colors.text }]}>
-        {user?.firstname || "User"}
-      </Text>
-    </TouchableOpacity>
+      {open && (
+        <View
+          style={[
+            styles.dropdown,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={() => {
+              setOpen(false);
+              router.push("/profile");
+            }}
+            style={styles.dropdownItem}
+          >
+            <Text style={{ color: colors.text }}>👤 Profile</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              setOpen(false);
+              router.push("/change-password");
+            }}
+            style={styles.dropdownItem}
+          >
+            <Text style={{ color: colors.text }}>🔑 Change Password</Text>
+          </TouchableOpacity>
+
+          <View style={styles.dropdownItemRow}>
+            <Text style={{ color: colors.text, flex: 1 }}>
+              {theme === "dark" ? "🌙 Dark Mode" : "☀️ Light Mode"}
+            </Text>
+
+            <Switch
+              value={theme === "dark"}
+              onValueChange={handleSwitch}
+              trackColor={{
+                false: colors.border,
+                true: colors.primary,
+              }}
+              thumbColor="#fff"
+            />
+          </View>
+
+          <View
+            style={{
+              height: 1,
+              backgroundColor: colors.border,
+              marginVertical: 6,
+            }}
+          />
+
+          <TouchableOpacity
+            onPress={async () => {
+              await logout();
+              router.replace("/login");
+            }}
+            style={styles.dropdownItem}
+          >
+            <Text style={{ color: colors.text, opacity: 0.8 }}>⊘ Logout</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -240,39 +283,19 @@ function HeaderRight({ user, router }: any) {
 // ======================================================
 
 function AppContent() {
-  const { loading, user } = useAuth();
+  const { loading, user, logout } = useAuth();
   const router = useRouter();
 
   const systemScheme = useColorScheme();
   const [theme, setTheme] = useState(systemScheme || "light");
 
-  // 🔥 LOAD THEME
   useEffect(() => {
     const loadTheme = async () => {
-      try {
-        const savedTheme = await AsyncStorage.getItem(THEME_KEY);
-        if (savedTheme) {
-          setTheme(savedTheme);
-        }
-      } catch (e) {
-        console.log("Fehler beim Laden", e);
-      }
+      const saved = await AsyncStorage.getItem(THEME_KEY);
+      if (saved) setTheme(saved);
     };
-
     loadTheme();
   }, []);
-
-  // 🔥 TOGGLE + SAVE
-  const toggleTheme = async () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-
-    try {
-      await AsyncStorage.setItem(THEME_KEY, newTheme);
-    } catch (e) {
-      console.log("Fehler beim Speichern", e);
-    }
-  };
 
   if (loading) {
     return (
@@ -285,47 +308,25 @@ function AppContent() {
   return (
     <ThemeProvider value={theme === "dark" ? DarkTheme : LightTheme}>
       <Drawer
-        screenOptions={({ theme }) => ({
+        screenOptions={{
           headerTitle: "",
-          headerStyle: {
-            backgroundColor: theme.colors.card,
-          },
-          headerTintColor: theme.colors.text,
-          headerRight: () => <HeaderRight user={user} router={router} />,
-          headerRightContainerStyle: {
-            paddingRight: 16,
-          },
-        })}
-        drawerContent={() => (
-          <CustomDrawerContent
-            key={theme} // 🔥 FIX: Re-render Drawer
-            theme={theme}
-            toggleTheme={toggleTheme}
-          />
-        )}
+          headerRight: () =>
+            user ? ( // 🔥 Avatar nur wenn eingeloggt
+              <HeaderRight
+                user={user}
+                router={router}
+                theme={theme}
+                setTheme={setTheme}
+                logout={logout}
+              />
+            ) : null,
+          headerRightContainerStyle: { paddingRight: 16 },
+        }}
+        drawerContent={() => <CustomDrawerContent />}
       >
         <Drawer.Screen name="index" />
         <Drawer.Screen name="question" />
         <Drawer.Screen name="test" />
-
-        <Drawer.Screen
-          name="test/tst"
-          options={{ drawerItemStyle: { display: "none" } }}
-        />
-        <Drawer.Screen
-          name="test/ergebnis"
-          options={{ drawerItemStyle: { display: "none" } }}
-        />
-
-        <Drawer.Screen
-          name="login/index"
-          options={{ drawerItemStyle: { display: "none" }, headerShown: false }}
-        />
-
-        <Drawer.Screen
-          name="registration/index"
-          options={{ drawerItemStyle: { display: "none" }, headerShown: false }}
-        />
 
         <Drawer.Screen
           name="change-password/index"
@@ -369,41 +370,13 @@ const styles = {
     alignItems: "center",
   },
   itemContainer: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginHorizontal: 8,
-    borderRadius: 10,
+    padding: 16,
   },
   indent: {
     paddingLeft: 32,
   },
   itemText: {
     fontSize: 15,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    letterSpacing: 1,
-  },
-  divider: {
-    height: 1,
-    marginVertical: 12,
-    marginHorizontal: 16,
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  headerUser: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginLeft: 4,
   },
   avatar: {
     width: 32,
@@ -415,5 +388,37 @@ const styles = {
   avatarText: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  dropdown: {
+    position: "absolute",
+    top: 45,
+    right: 0,
+    width: 200,
+    borderRadius: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    elevation: 5,
+  },
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  dropdownItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  divider: {
+    height: 1,
+    marginVertical: 12,
+    marginHorizontal: 16,
   },
 };

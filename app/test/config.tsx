@@ -1,12 +1,13 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Button, StyleSheet, TextInput } from "react-native";
+import { Button, StyleSheet, TextInput, View } from "react-native";
 
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Image } from "expo-image";
 
+import Footer from "@/components/Footer";
 import { useTheme } from "@react-navigation/native";
 
 export default function ConfigScreen() {
@@ -40,101 +41,95 @@ export default function ConfigScreen() {
   };
 
   return (
-    <ParallaxScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ backgroundColor: colors.background }}
-      headerBackgroundColor={{
-        light: colors.headerImageBackground,
-        dark: colors.headerImageBackground,
-      }}
-      headerImage={
-        <ThemedView
-          style={{
-            padding: 20,
-            backgroundColor: colors.headerImageBackground,
-          }}
-        >
+    <View style={{ flex: 1 }}>
+      <ParallaxScrollView
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={{
+          backgroundColor: colors.background,
+          flexGrow: 1,
+        }}
+        headerBackgroundColor={{
+          light: colors.card,
+          dark: colors.card,
+        }}
+        headerImage={
           <Image
             source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={{
-              width: "60%", // 🔥 wie gewünscht
-              maxWidth: 480, // 🔥 für Web
-              aspectRatio: 1024 / 409,
-            }}
-            contentFit="contain"
+            style={styles.reactLogo}
           />
-        </ThemedView>
-      }
-    >
-      <ThemedView
-        style={[styles.container, { backgroundColor: colors.background }]}
+        }
       >
-        <ThemedText style={styles.label}>Title:</ThemedText>
-        <TextInput
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Title of your test"
-          placeholderTextColor={colors.border}
-          style={[
-            styles.input,
-            {
-              borderColor: colors.border,
-              color: colors.text,
-              backgroundColor: colors.card,
-              width: "100%",
-              maxWidth: 400,
-            },
-          ]}
-        />
-
-        <ThemedText style={styles.label}>Number questions:</ThemedText>
-        <TextInput
-          value={questionCount}
-          onChangeText={setQuestionCount}
-          keyboardType="numeric"
-          placeholder="For e.g. 20, 30, ..."
-          placeholderTextColor={colors.border}
-          style={[
-            styles.input,
-            {
-              borderColor: colors.border,
-              color: colors.text,
-              backgroundColor: colors.card,
-              width: "100%",
-              maxWidth: 400,
-            },
-          ]}
-        />
-
-        <ThemedText style={styles.label}>Time (minutes):</ThemedText>
-        <TextInput
-          value={timeMinutes}
-          onChangeText={setTimeMinutes}
-          keyboardType="numeric"
-          placeholder="For e.g. 60, 120, ..."
-          placeholderTextColor={colors.border}
-          style={[
-            styles.input,
-            {
-              borderColor: colors.border,
-              color: colors.text,
-              backgroundColor: colors.card,
-              width: "100%",
-              maxWidth: 400,
-            },
-          ]}
-        />
-
-        <ThemedView style={styles.fixToText}>
-          <Button
-            title="Test starten"
-            onPress={startTest}
-            disabled={!isFormValid}
-            color={isFormValid ? colors.primary : colors.border}
+        <ThemedView
+          style={[styles.container, { backgroundColor: colors.background }]}
+        >
+          <ThemedText style={styles.label}>Title:</ThemedText>
+          <TextInput
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Title of your test"
+            placeholderTextColor={colors.border}
+            style={[
+              styles.input,
+              {
+                borderColor: colors.border,
+                color: colors.text,
+                backgroundColor: colors.card,
+                width: "100%",
+                maxWidth: 400,
+              },
+            ]}
           />
+
+          <ThemedText style={styles.label}>Number questions:</ThemedText>
+          <TextInput
+            value={questionCount}
+            onChangeText={setQuestionCount}
+            keyboardType="numeric"
+            placeholder="For e.g. 20, 30, ..."
+            placeholderTextColor={colors.border}
+            style={[
+              styles.input,
+              {
+                borderColor: colors.border,
+                color: colors.text,
+                backgroundColor: colors.card,
+                width: "100%",
+                maxWidth: 400,
+              },
+            ]}
+          />
+
+          <ThemedText style={styles.label}>Time (minutes):</ThemedText>
+          <TextInput
+            value={timeMinutes}
+            onChangeText={setTimeMinutes}
+            keyboardType="numeric"
+            placeholder="For e.g. 60, 120, ..."
+            placeholderTextColor={colors.border}
+            style={[
+              styles.input,
+              {
+                borderColor: colors.border,
+                color: colors.text,
+                backgroundColor: colors.card,
+                width: "100%",
+                maxWidth: 400,
+              },
+            ]}
+          />
+
+          <ThemedView style={styles.fixToText}>
+            <Button
+              title="Test starten"
+              onPress={startTest}
+              disabled={!isFormValid}
+              color={isFormValid ? colors.primary : colors.border}
+            />
+          </ThemedView>
         </ThemedView>
-      </ThemedView>
-    </ParallaxScrollView>
+      </ParallaxScrollView>
+      <Footer />
+    </View>
   );
 }
 

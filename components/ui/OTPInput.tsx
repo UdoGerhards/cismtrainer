@@ -5,11 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import {
-  StyleSheet,
-  TextInput,
-  View
-} from "react-native";
+import { StyleSheet, TextInput, View } from "react-native";
 
 interface OtpInputProps {
   onComplete: (otp: string) => void;
@@ -24,9 +20,7 @@ const OTP_LENGTH = 6;
 
 const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
   ({ onComplete }, ref) => {
-    const [values, setValues] = useState<string[]>(
-      Array(OTP_LENGTH).fill("")
-    );
+    const [values, setValues] = useState<string[]>(Array(OTP_LENGTH).fill(""));
     const [activeIndex, setActiveIndex] = useState(0);
 
     const inputs = useRef<(TextInput | null)[]>([]);
@@ -153,17 +147,13 @@ const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
               handleKeyPress(nativeEvent.key, index)
             }
             onFocus={() => setActiveIndex(index)}
-
             keyboardType="number-pad"
             maxLength={1}
-
             // 🔥 Autofill Support
             textContentType="oneTimeCode"
             autoComplete="sms-otp"
-
             // 🔥 wichtig für Web + Mobile
             inputMode="numeric"
-
             style={[
               styles.input,
               activeIndex === index && styles.active,
@@ -173,7 +163,7 @@ const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
         ))}
       </View>
     );
-  }
+  },
 );
 
 export default OtpInput;

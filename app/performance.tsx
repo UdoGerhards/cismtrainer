@@ -17,6 +17,7 @@ import {
 // 📊 Charts (NEU)
 import { LineChart, StackedBarChart } from "react-native-chart-kit";
 
+import Footer from "@/components/Footer";
 import { useTheme } from "@react-navigation/native";
 
 // 🎯 CONFIG
@@ -247,83 +248,80 @@ export default function Performance() {
   }
 
   return (
-    <ParallaxScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ backgroundColor: colors.background }}
-      headerBackgroundColor={{
-        light: colors.headerImageBackground,
-        dark: colors.headerImageBackground,
-      }}
-      headerImage={
-        <ThemedView
-          style={{
-            padding: 20,
-            backgroundColor: colors.headerImageBackground,
-          }}
-        >
+    <View style={{ flex: 1 }}>
+      <ParallaxScrollView
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={{
+          backgroundColor: colors.background,
+          flexGrow: 1,
+        }}
+        headerBackgroundColor={{
+          light: colors.card,
+          dark: colors.card,
+        }}
+        headerImage={
           <Image
             source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={{
-              width: "60%", // 🔥 wie gewünscht
-              maxWidth: 480, // 🔥 für Web
-              aspectRatio: 1024 / 409,
-            }}
-            contentFit="contain"
+            style={styles.reactLogo}
           />
-        </ThemedView>
-      }
-    >
-      <ThemedView
-        style={[
-          styles.chartContainer,
-          {
-            backgroundColor: colors.background,
-            borderColor: colors.border,
-            borderWidth: 1,
-            borderRadius: 12,
-            padding: 10,
-          },
-        ]}
-      >
-        <ThemedText type="title" style={{ backgroundColor: colors.background }}>
-          Your performance
-        </ThemedText>
-      </ThemedView>
-
-      <View style={styles.buttonRow}>
-        <Button
-          title="7 Tage"
-          color={colors.primary}
-          onPress={() => setRange(7)}
-        />
-        <Button
-          title="30 Tage"
-          color={colors.primary}
-          onPress={() => setRange(30)}
-        />
-        <Button
-          title="Alle"
-          color={colors.primary}
-          onPress={() => setRange(3650)}
-        />
-      </View>
-
-      <ThemedView
-        style={
-          (styles.chartContainer,
-          {
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            borderWidth: 1,
-            borderRadius: 12,
-            padding: 16,
-            marginHorizontal: 16,
-          })
         }
       >
-        {Platform.OS === "web" ? WebChart : MobileChart}
-      </ThemedView>
-    </ParallaxScrollView>
+        <ThemedView
+          style={[
+            styles.chartContainer,
+            {
+              backgroundColor: colors.background,
+              borderColor: colors.border,
+              borderWidth: 1,
+              borderRadius: 12,
+              padding: 10,
+            },
+          ]}
+        >
+          <ThemedText
+            type="title"
+            style={{ backgroundColor: colors.background }}
+          >
+            Your performance
+          </ThemedText>
+        </ThemedView>
+
+        <View style={styles.buttonRow}>
+          <Button
+            title="7 Tage"
+            color={colors.primary}
+            onPress={() => setRange(7)}
+          />
+          <Button
+            title="30 Tage"
+            color={colors.primary}
+            onPress={() => setRange(30)}
+          />
+          <Button
+            title="Alle"
+            color={colors.primary}
+            onPress={() => setRange(3650)}
+          />
+        </View>
+
+        <ThemedView
+          style={
+            (styles.chartContainer,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              borderWidth: 1,
+              borderRadius: 12,
+              padding: 16,
+              marginHorizontal: 16,
+            })
+          }
+        >
+          {Platform.OS === "web" ? WebChart : MobileChart}
+        </ThemedView>
+      </ParallaxScrollView>
+      <Footer />
+    </View>
   );
 }
 

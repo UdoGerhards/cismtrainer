@@ -14,8 +14,6 @@ class Client extends Base {
     this.apiBase = this.getApiBase();
     this.token = null;
     this.conf = conf;
-
-    console.log("API BASE:", this.apiBase);
   }
 
   /*
@@ -26,7 +24,7 @@ class Client extends Base {
 
   getApiBase() {
     if (Platform.OS === "web") {
-      return "https://smallbox/api";
+      return "https://localhost/api";
     }
 
     const hostUri = Constants.expoConfig?.hostUri;
@@ -50,7 +48,7 @@ class Client extends Base {
   */
 
   async getToken() {
-    if (this.token) return this.token; // 🔥 Cache nutzen
+    if (this.token) return this.token;
 
     if (Platform.OS === "web") {
       if (typeof window === "undefined") return null;
@@ -94,7 +92,6 @@ class Client extends Base {
     const token = customToken || (await this.getToken());
 
     const fullUrl = `${this.apiBase}${url}`;
-    console.log("REQUEST:", fullUrl, "TOKEN:", !!token);
 
     let res;
 
@@ -102,9 +99,9 @@ class Client extends Base {
       res = await fetch(fullUrl, {
         ...options,
         headers: {
-          ...(options.headers || {}), // 🔥 zuerst
+          ...(options.headers || {}),
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}), // 🔥 dann Token
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
     } catch (e) {
@@ -123,7 +120,9 @@ class Client extends Base {
 
     if (!res.ok) {
       console.error("HTTP ERROR:", res.status);
-      throw new Error(`HTTP ${res.status}`);
+      const error = new Error(`HTTP ${res.status}`);
+      error.status = res.status;
+      throw error;
     }
 
     return res.json();
@@ -171,39 +170,71 @@ class Client extends Base {
 
   /*
   ==========================================
-  CURRENT USER (🔥 FIXED)
+  CURRENT USER
   ==========================================
   */
 
   async me(token) {
-    try {
-      const data = await this.request("/me", { method: "GET" }, token);
+    const data = await this.request("/me", { method: "GET" }, token);
 
-      if (!data?.user) {
-        console.warn("⚠️ ME: no user in response", data);
-        throw new Error("Invalid /me response");
-      }
-
-      return {
-        user: {
-          id: data.user.id,
-          firstname: data.user.firstname,
-          lastname: data.user.lastname,
-          twoFactor: {
-            enabled: !!data.user.twoFactor?.enabled,
-          },
-          mustChangePassword: !!data.user.mustChangePassword,
-        },
-      };
-    } catch (err) {
-      console.log("ME ERROR:", err);
-      throw err;
+    if (!data?.user) {
+      throw new Error("Invalid /me response");
     }
+
+    return {
+      user: {
+        id: data.user.id,
+        firstname: data.user.firstname,
+        lastname: data.user.lastname,
+        role: data.user.role,
+        twoFactor: {
+          enabled: !!data.user.twoFactor?.enabled,
+        },
+        mustChangePassword: !!data.user.mustChangePassword,
+      },
+    };
   }
 
   /*
   ==========================================
-  REST (unverändert)
+  🔥 ADMIN USER MANAGEMENT (NEU)
+  ==========================================
+  */
+
+  async createUser({ firstname, lastname, email, password, token }) {
+    return this.request("/admin/user", {
+      method: "POST",
+      body: JSON.stringify({
+        firstname,
+        lastname,
+        email,
+        password,
+        token, // 🔐 2FA Token
+      }),
+    });
+  }
+
+  async getAllUsers() {
+    const res = await this.request("/list/all/users", {
+      method: "GET",
+    });
+
+    return res?.users || [];
+  }
+
+  async deleteUser(userId, token) {
+    return this.request("/delete/user", {
+      method: "DELETE",
+      body: JSON.stringify({
+        userId,
+        token, // 🔐 2FA Token
+      }),
+    });
+  }
+
+  /*
+  ==========================================
+  REST
   ==========================================
   */
 

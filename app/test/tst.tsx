@@ -2,7 +2,7 @@ import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Image } from "expo-image";
-import { Button, StyleSheet } from "react-native";
+import { Button, StyleSheet, View } from "react-native";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -10,9 +10,10 @@ import Question from "@/components/ui/tst/question";
 import client from "@/scripts/client";
 import { QuestionItem } from "@/scripts/model/if_question";
 
+import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
-import { router, useLocalSearchParams } from "expo-router";
 import { useTheme } from "@react-navigation/native";
+import { router, useLocalSearchParams } from "expo-router";
 
 export default function TestScreen() {
   const { colors } = useTheme(); // ✅ THEME
@@ -141,93 +142,90 @@ export default function TestScreen() {
   const nextDisabled = isLastQuestion && !checked;
 
   return (
-    <ParallaxScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ backgroundColor: colors.background }}
-      headerBackgroundColor={{
-        light: colors.headerImageBackground,
-        dark: colors.headerImageBackground,
-      }}
-      headerImage={
-        <ThemedView
-          style={{
-            padding: 20,
-            backgroundColor: colors.headerImageBackground,
-          }}
-        >
+    <View style={{ flex: 1 }}>
+      <ParallaxScrollView
+        style={{ backgroundColor: colors.background }}
+        contentContainerStyle={{
+          backgroundColor: colors.background,
+          flexGrow: 1,
+        }}
+        headerBackgroundColor={{
+          light: colors.card,
+          dark: colors.card,
+        }}
+        headerImage={
           <Image
             source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={{
-              width: "60%", // 🔥 wie gewünscht
-              maxWidth: 480, // 🔥 für Web
-              aspectRatio: 1024 / 409,
-            }}
-            contentFit="contain"
+            style={styles.reactLogo}
+          />
+        }
+      >
+        <ThemedView
+          style={[
+            styles.titleContainer,
+            { backgroundColor: colors.background },
+          ]}
+        >
+          <ThemedText type="title">{title}</ThemedText>
+
+          {timeMinutes > 0 && (
+            <ThemedView
+              style={[
+                styles.timerBox,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  borderWidth: 1,
+                },
+              ]}
+            >
+              <ThemedText style={[styles.timer, { color: colors.text }]}>
+                ⏱ {formatTime(timeLeft)}
+              </ThemedText>
+            </ThemedView>
+          )}
+        </ThemedView>
+
+        <ThemedView
+          style={[
+            styles.questionWrapper,
+            {
+              backgroundColor: colors.background,
+              borderColor: colors.border,
+              borderWidth: 0,
+              borderRadius: 12,
+              padding: 12,
+            },
+          ]}
+        >
+          <Question
+            ref={questionRef}
+            question={currentQuestion}
+            checked={checked}
+            test={testId}
+            user={user}
           />
         </ThemedView>
-      }
-    >
-      <ThemedView
-        style={[styles.titleContainer, { backgroundColor: colors.background }]}
-      >
-        <ThemedText type="title">{title}</ThemedText>
 
-        {timeMinutes > 0 && (
-          <ThemedView
-            style={[
-              styles.timerBox,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                borderWidth: 1,
-              },
-            ]}
-          >
-            <ThemedText style={[styles.timer, { color: colors.text }]}>
-              ⏱ {formatTime(timeLeft)}
-            </ThemedText>
-          </ThemedView>
-        )}
-      </ThemedView>
-
-      <ThemedView
-        style={[
-          styles.questionWrapper,
-          {
-            backgroundColor: colors.background,
-            borderColor: colors.border,
-            borderWidth: 0,
-            borderRadius: 12,
-            padding: 12,
-          },
-        ]}
-      >
-        <Question
-          ref={questionRef}
-          question={currentQuestion}
-          checked={checked}
-          test={testId}
-          user={user}
-        />
-      </ThemedView>
-
-      <ThemedView style={styles.fixToText}>
-        {!checked && (
+        <ThemedView style={styles.fixToText}>
+          {!checked && (
+            <Button
+              title="OK"
+              onPress={handleOk}
+              disabled={checked}
+              color={colors.primary}
+            />
+          )}
           <Button
-            title="OK"
-            onPress={handleOk}
-            disabled={checked}
+            title="Next"
+            onPress={handleNext}
+            disabled={nextDisabled}
             color={colors.primary}
           />
-        )}
-        <Button
-          title="Next"
-          onPress={handleNext}
-          disabled={nextDisabled}
-          color={colors.primary}
-        />
-      </ThemedView>
-    </ParallaxScrollView>
+        </ThemedView>
+      </ParallaxScrollView>
+      <Footer />
+    </View>
   );
 }
 

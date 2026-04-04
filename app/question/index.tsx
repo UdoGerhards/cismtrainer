@@ -2,7 +2,7 @@ import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Image } from "expo-image";
-import { Button, LogBox, StyleSheet } from "react-native";
+import { Button, LogBox, StyleSheet, View } from "react-native";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -15,6 +15,7 @@ import { Stack } from "expo-router";
 
 import ExplanationBox from "@/components/ui/tst/explanationBox";
 
+import Footer from "@/components/Footer";
 import { useTheme } from "@react-navigation/native";
 
 LogBox.ignoreLogs(["props.pointerEvents is deprecated"]);
@@ -86,109 +87,103 @@ export default function HomeScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Random Question" }} />
+      <View style={{ flex: 1 }}>
+        <Stack.Screen options={{ title: "Random Question" }} />
 
-      <ParallaxScrollView
-        style={{ backgroundColor: colors.background }}
-        contentContainerStyle={{ backgroundColor: colors.background }}
-        headerBackgroundColor={{
-          light: colors.headerImageBackground,
-          dark: colors.headerImageBackground,
-        }}
-        headerImage={
-          <ThemedView
-            style={{
-              padding: 20,
-              backgroundColor: colors.headerImageBackground,
-            }}
-          >
+        <ParallaxScrollView
+          style={{ backgroundColor: colors.background }}
+          contentContainerStyle={{
+            backgroundColor: colors.background,
+            flexGrow: 1,
+          }}
+          headerBackgroundColor={{
+            light: colors.card,
+            dark: colors.card,
+          }}
+          headerImage={
             <Image
               source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-              style={{
-                width: "60%", // 🔥 wie gewünscht
-                maxWidth: 480, // 🔥 für Web
-                aspectRatio: 1024 / 409,
-              }}
-              contentFit="contain"
+              style={styles.reactLogo}
             />
+          }
+        >
+          <Question
+            ref={questionRef}
+            question={questions}
+            checked={checked}
+            user={user}
+          />
+
+          {/* BUTTONS */}
+          <ThemedView style={styles.fixToText}>
+            {!okDisabled && (
+              <Button
+                title="OK"
+                color={colors.primary}
+                onPress={() => {
+                  client.sendGivenAnswer();
+                  setChecked(true);
+                  setOkDisabled(true);
+                  setNextDisabled(false);
+                  setExplainDisabled(false);
+                }}
+              />
+            )}
+
+            {!explainDisabled && (
+              <Button
+                title="Explain"
+                color={colors.primary}
+                onPress={async () => {
+                  if (!currentQuestionId) return;
+
+                  setExplainDisabled(true);
+                  setExpanded(true);
+
+                  if (explanations[currentQuestionId]) return;
+
+                  try {
+                    setLoadingExplanation(currentQuestionId);
+
+                    const res = await client.getExplanation(currentQuestionId);
+
+                    setExplanations((prev) => ({
+                      ...prev,
+                      [currentQuestionId]: res || "Keine Erklärung vorhanden",
+                    }));
+                  } catch (e) {
+                    console.error(e);
+                    setExplanations((prev) => ({
+                      ...prev,
+                      [currentQuestionId]: "Fehler beim Laden der Erklärung",
+                    }));
+                  } finally {
+                    setLoadingExplanation(null);
+                  }
+                }}
+              />
+            )}
+
+            {!nextDisabled && (
+              <Button
+                title="Next"
+                color={colors.primary}
+                onPress={loadNextQuestion}
+                disabled={nextDisabled}
+              />
+            )}
           </ThemedView>
-        }
-      >
-        <Question
-          ref={questionRef}
-          question={questions}
-          checked={checked}
-          user={user}
-        />
 
-        {/* BUTTONS */}
-        <ThemedView style={styles.fixToText}>
-          {!okDisabled && (
-            <Button
-              title="OK"
-              color={colors.primary}
-              onPress={() => {
-                client.sendGivenAnswer();
-                setChecked(true);
-                setOkDisabled(true);
-                setNextDisabled(false);
-                setExplainDisabled(false);
-              }}
-            />
-          )}
-
-          {!explainDisabled && (
-            <Button
-              title="Explain"
-              color={colors.primary}
-              onPress={async () => {
-                if (!currentQuestionId) return;
-
-                setExplainDisabled(true);
-                setExpanded(true);
-
-                if (explanations[currentQuestionId]) return;
-
-                try {
-                  setLoadingExplanation(currentQuestionId);
-
-                  const res = await client.getExplanation(currentQuestionId);
-
-                  setExplanations((prev) => ({
-                    ...prev,
-                    [currentQuestionId]: res || "Keine Erklärung vorhanden",
-                  }));
-                } catch (e) {
-                  console.error(e);
-                  setExplanations((prev) => ({
-                    ...prev,
-                    [currentQuestionId]: "Fehler beim Laden der Erklärung",
-                  }));
-                } finally {
-                  setLoadingExplanation(null);
-                }
-              }}
-            />
-          )}
-
-          {!nextDisabled && (
-            <Button
-              title="Next"
-              color={colors.primary}
-              onPress={loadNextQuestion}
-              disabled={nextDisabled}
-            />
-          )}
-        </ThemedView>
-
-        <ExplanationBox
-          isExpanded={isExpanded}
-          loadingExplanation={loadingExplanation}
-          itemId={currentQuestionId}
-          explanations={explanations}
-          styles={styles}
-        />
-      </ParallaxScrollView>
+          <ExplanationBox
+            isExpanded={isExpanded}
+            loadingExplanation={loadingExplanation}
+            itemId={currentQuestionId}
+            explanations={explanations}
+            styles={styles}
+          />
+        </ParallaxScrollView>
+        <Footer />
+      </View>
     </>
   );
 }
