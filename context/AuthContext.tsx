@@ -299,10 +299,16 @@ function AuthGuard() {
 
     const first = segments[0];
 
+    // 1. Definition der öffentlichen Routen
+    const isPublicRoute = first === "impressum"; // Hier 'impressum' ergänzen
+
     const inLogin = first === "login";
     const inRegistration = first === "registration";
     const inChangePassword = first === "change-password";
     const in2FA = first === "2fa";
+
+    // 2. Wenn es eine öffentliche Route ist, Guard abbrechen
+    if (isPublicRoute) return;
 
     const logout = async () => {
       setUser(null);

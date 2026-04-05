@@ -24,7 +24,7 @@ class Client extends Base {
 
   getApiBase() {
     if (Platform.OS === "web") {
-      return "https://localhost/api";
+      return "https://smallbox/api";
     }
 
     const hostUri = Constants.expoConfig?.hostUri;
