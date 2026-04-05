@@ -333,6 +333,99 @@ class Client extends Base {
       body: JSON.stringify({ questionId }),
     });
   }
+
+  /**
+   * Startet den KI-Batch-Prozess zur Korrektur und Domain-Zuordnung
+   * @param {number} chunkSize - Anzahl der Fragen pro Batch
+   * @param {string} token - 2FA/Admin Authenticator Token
+   */
+  async processCismBatch(chunkSize, token, offset = 0) {
+    const data = await this.request("/normalize/questions", {
+      method: "POST",
+      body: JSON.stringify({
+        chunkSize: parseInt(chunkSize),
+        token,
+        offset: offset, // <--- Neu hinzugefügt
+      }),
+    });
+
+    return {
+      successCount: data.okCount,
+      errorCount: data.wrongCount,
+      finished: data.finished,
+    };
+  }
+
+  /*
+  ==========================================
+  QUESTIONS INFO
+  ==========================================
+  */
+
+  async getQuestionCount() {
+    const data = await this.request("/admin/questions/count", {
+      method: "GET",
+    });
+
+    return data?.count || 0;
+  }
+
+  /**
+   * Ruft alle Test-Objekte inklusive detaillierter Fragen und Antworten ab.
+   * @param {string} token - Das Authentifizierungs-Token (Admin-Rechte erforderlich).
+   * @param {string|null} userId - (Optional) ID des Users, um die Ergebnisse zu filtern.
+   * @returns {Promise<Array>} Liste der detaillierten Test-Objekte.
+   */
+  // In scripts/client.js
+
+  /**
+   * Ruft Test-Details ab.
+   * @param {boolean} showAll - Wenn true, werden alle Tests (Admin-Sicht) angefordert.
+   */
+  async fetchFullTestDetails(showAll = false) {
+    // Wir hängen das Flag direkt an die URL an
+    const url = `/admin/tests/full?showAll=${showAll}`;
+
+    const data = await this.request(url, {
+      method: "GET",
+      // Header (Authorization) wird normalerweise automatisch von deiner request-Methode gesetzt
+    });
+
+    if (!data.success) {
+      throw new Error(data.message || "Fehler beim Laden der Test-Details");
+    }
+
+    return {
+      tests: data.data,
+      count: data.count,
+    };
+  }
+
+  /**
+   * Löscht eine Liste von Tests anhand ihrer IDs.
+   * @param {string[]} testIds - Array von Test-IDs als Strings.
+   */
+  async deleteTests(testIds) {
+    const url = `/admin/tests/delete`;
+
+    const data = await this.request(url, {
+      method: "DELETE",
+      body: JSON.stringify({ testIds }), // Verpackt das Array in ein Objekt für den Server-Body
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!data.success) {
+      throw new Error(data.message || "Fehler beim Löschen der Tests");
+    }
+
+    return {
+      success: true,
+      deletedTests: data.deletedTests,
+      deletedAnswers: data.deletedAnswers,
+    };
+  }
 }
 
 export default new Client();
