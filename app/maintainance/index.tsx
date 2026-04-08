@@ -12,11 +12,12 @@ import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useTheme } from "@react-navigation/native";
-import { Image } from "expo-image";
 
 import Footer from "@/components/Footer";
 import OtpInput, { OtpInputRef } from "@/components/ui/OTPInput";
 import client from "@/scripts/client";
+
+import { HeaderLogo } from "@/components/headerLogo";
 
 export default function AdminUserScreen() {
   const { colors } = useTheme();
@@ -158,12 +159,7 @@ export default function AdminUserScreen() {
           light: colors.card,
           dark: colors.card,
         }}
-        headerImage={
-          <Image
-            source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={styles.reactLogo}
-          />
-        }
+        headerImage={<HeaderLogo />}
       >
         <ThemedView style={[styles.container]}>
           <ThemedText style={styles.title}>User Verwaltung</ThemedText>
@@ -341,11 +337,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     padding: 16,
-  },
-  reactLogo: {
-    height: 163,
-    width: 408,
-    marginTop: 40,
-    marginLeft: 30,
   },
 });

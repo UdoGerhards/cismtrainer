@@ -244,7 +244,8 @@ function HeaderRight({ user, router, theme, setTheme, logout }: any) {
 // 🔹 MAIN APP CONTENT
 // ======================================================
 function AppContent() {
-  const { loading, user, logout } = useAuth();
+  // 1. isAuthenticated hier hinzufügen
+  const { loading, user, logout, isAuthenticated } = useAuth();
   const router = useRouter();
   const systemScheme = useColorScheme();
   const [theme, setTheme] = useState(systemScheme || "light");
@@ -270,6 +271,10 @@ function AppContent() {
         drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
           headerTitle: "CISM Trainer",
+          // 🔥 DIESE BEIDEN ZEILEN SIND ENTSCHEIDEND:
+          headerShown: isAuthenticated, // Zeigt Header nur wenn eingeloggt
+          swipeEnabled: isAuthenticated, // Verhindert Wischen zum Öffnen wenn ausgeloggt
+
           headerRight: () =>
             user ? (
               <HeaderRight
@@ -286,6 +291,15 @@ function AppContent() {
         <Drawer.Screen name="index" options={{ title: "Home" }} />
         <Drawer.Screen name="question" options={{ title: "Practice" }} />
         <Drawer.Screen name="test" options={{ title: "Exam" }} />
+
+        {/* Falls die login-Route im Drawer definiert ist, verstecke sie aus der Liste */}
+        <Drawer.Screen
+          name="login"
+          options={{
+            drawerItemStyle: { display: "none" },
+            headerShown: false, // Sicherheitshalber auch hier aus
+          }}
+        />
       </Drawer>
       <StatusBar style={theme === "dark" ? "light" : "dark"} />
     </ThemeProvider>

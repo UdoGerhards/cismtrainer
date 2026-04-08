@@ -1,7 +1,6 @@
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Image } from "expo-image";
 import { Button, LogBox, StyleSheet, View } from "react-native";
 
 import { useEffect, useRef, useState } from "react";
@@ -17,6 +16,8 @@ import ExplanationBox from "@/components/ui/tst/explanationBox";
 
 import Footer from "@/components/Footer";
 import { useTheme } from "@react-navigation/native";
+
+import { HeaderLogo } from "@/components/headerLogo";
 
 LogBox.ignoreLogs(["props.pointerEvents is deprecated"]);
 
@@ -100,12 +101,7 @@ export default function HomeScreen() {
             light: colors.card,
             dark: colors.card,
           }}
-          headerImage={
-            <Image
-              source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-              style={styles.reactLogo}
-            />
-          }
+          headerImage={<HeaderLogo />}
         >
           <Question
             ref={questionRef}
@@ -197,12 +193,6 @@ const styles = StyleSheet.create({
   stepContainer: {
     gap: 8,
     marginBottom: 8,
-  },
-  reactLogo: {
-    height: 163,
-    width: 408,
-    marginTop: 40,
-    marginLeft: 30,
   },
   fixToText: {
     flexDirection: "row",

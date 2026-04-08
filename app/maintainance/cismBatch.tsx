@@ -5,11 +5,12 @@ import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useTheme } from "@react-navigation/native";
-import { Image } from "expo-image";
 
 import Footer from "@/components/Footer";
 import OtpInput, { OtpInputRef } from "@/components/ui/OTPInput";
 import client from "@/scripts/client";
+
+import { HeaderLogo } from "@/components/headerLogo";
 
 export default function AdminCismBatchScreen() {
   const { colors } = useTheme();
@@ -51,6 +52,7 @@ export default function AdminCismBatchScreen() {
     const fetchInitialData = async () => {
       try {
         const count = await client.getQuestionCount();
+
         console.log("Anzahl Fragen in DB:", count);
         setTotalQuestions(count);
       } catch (err) {
@@ -148,12 +150,7 @@ export default function AdminCismBatchScreen() {
           light: colors.card,
           dark: colors.card,
         }}
-        headerImage={
-          <Image
-            source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={styles.reactLogo}
-          />
-        }
+        headerImage={<HeaderLogo />}
       >
         <ThemedView style={styles.container}>
           <ThemedText style={styles.title}>CISM AI Batch Optimizer</ThemedText>
@@ -351,11 +348,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     lineHeight: 24,
-  },
-  reactLogo: {
-    height: 100,
-    width: 250,
-    marginTop: 60,
-    alignSelf: "center",
   },
 });

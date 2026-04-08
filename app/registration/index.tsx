@@ -14,6 +14,8 @@ import client from "@/scripts/client";
 import Footer from "@/components/Footer";
 import { useTheme } from "@react-navigation/native";
 
+import { HeaderLogo } from "@/components/headerLogo";
+
 const MAX_ATTEMPTS = 5;
 const COOLDOWN_SECONDS = 30;
 
@@ -125,12 +127,7 @@ export default function RegistrationScreen() {
           light: colors.card,
           dark: colors.card,
         }}
-        headerImage={
-          <Image
-            source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={styles.reactLogo}
-          />
-        }
+        headerImage={<HeaderLogo />}
       >
         <ThemedView
           style={[styles.container, { backgroundColor: colors.background }]}
@@ -216,13 +213,6 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: "center",
     gap: 12,
-  },
-
-  reactLogo: {
-    height: 163,
-    width: 408,
-    marginTop: 40,
-    marginLeft: 30,
   },
 
   qr: {

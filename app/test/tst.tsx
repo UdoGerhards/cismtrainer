@@ -1,7 +1,6 @@
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Image } from "expo-image";
 import { Button, StyleSheet, View } from "react-native";
 
 import { useEffect, useRef, useState } from "react";
@@ -14,6 +13,8 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
+
+import { HeaderLogo } from "@/components/headerLogo";
 
 export default function TestScreen() {
   const { colors } = useTheme(); // ✅ THEME
@@ -153,12 +154,7 @@ export default function TestScreen() {
           light: colors.card,
           dark: colors.card,
         }}
-        headerImage={
-          <Image
-            source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={styles.reactLogo}
-          />
-        }
+        headerImage={<HeaderLogo />}
       >
         <ThemedView
           style={[

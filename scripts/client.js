@@ -5,6 +5,8 @@ import { Platform } from "react-native";
 import conf from "../log4js.json";
 import Base from "./foundation/Base.js";
 
+import { serverPass } from "../config";
+
 const TOKEN_KEY = "auth_token";
 
 class Client extends Base {
@@ -16,7 +18,7 @@ class Client extends Base {
     this.conf = conf;
   }
 
-  /*
+  /*c
   ==========================================
   API BASE
   ==========================================
@@ -24,7 +26,14 @@ class Client extends Base {
 
   getApiBase() {
     if (Platform.OS === "web") {
-      return "https://smallbox/api";
+      // 1. Prüfen, ob wir im Browser sind (verhindert den Metro-Error lokal)
+      if (typeof window === "undefined") {
+        return "https://localhost/api";
+      }
+
+      // 2. Im Browser: Nutze die Domain, mit der die Seite aufgerufen wurde.
+      // Das ist die sicherste Methode gegen SSL-Fehler (Common Name Mismatch).
+      return `${window.location.origin}/api`;
     }
 
     const hostUri = Constants.expoConfig?.hostUri;
@@ -101,6 +110,7 @@ class Client extends Base {
         headers: {
           ...(options.headers || {}),
           "Content-Type": "application/json",
+          "X-Smallbox-App-Key": serverPass,
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });

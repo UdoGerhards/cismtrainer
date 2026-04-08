@@ -3,12 +3,12 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import ExplanationBox from "@/components/ui/tst/explanationBox";
 import client from "@/scripts/client";
-import { Image } from "expo-image";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, View } from "react-native";
 
 import Footer from "@/components/Footer";
+import { HeaderLogo } from "@/components/headerLogo";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@react-navigation/native";
 
@@ -132,15 +132,7 @@ export default function ErgebnisScreen() {
                 backgroundColor: colors.background,
               }}
             >
-              <Image
-                source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-                style={{
-                  width: "60%", // 🔥 jetzt 60%
-                  maxWidth: 480, // optional für große Screens
-                  aspectRatio: 1024 / 409,
-                }}
-                contentFit="contain"
-              />
+              <HeaderLogo />
             </ThemedView>
 
             {/* CHART CARD */}

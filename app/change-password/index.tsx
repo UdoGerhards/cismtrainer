@@ -8,11 +8,12 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "@/context/AuthContext";
 import client from "@/scripts/client";
-import { Image } from "expo-image";
 
 import Footer from "@/components/Footer";
 import { useTheme } from "@react-navigation/native";
 import { useRouter } from "expo-router";
+
+import { HeaderLogo } from "@/components/headerLogo";
 
 export default function ChangePasswordScreen() {
   const { colors } = useTheme();
@@ -131,12 +132,7 @@ export default function ChangePasswordScreen() {
           light: colors.card,
           dark: colors.card,
         }}
-        headerImage={
-          <Image
-            source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={styles.reactLogo}
-          />
-        }
+        headerImage={<HeaderLogo />}
       >
         <ThemedView
           style={[styles.container, { backgroundColor: colors.background }]}
@@ -294,12 +290,5 @@ const styles = StyleSheet.create({
   icon: {
     position: "absolute",
     right: 12,
-  },
-
-  reactLogo: {
-    height: 163,
-    width: 408,
-    marginTop: 40,
-    marginLeft: 30,
   },
 });

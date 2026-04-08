@@ -13,12 +13,13 @@ import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useTheme } from "@react-navigation/native";
-import { Image } from "expo-image";
 
 import Footer from "@/components/Footer";
 import OtpInput, { OtpInputRef } from "@/components/ui/OTPInput";
 import { useAuth } from "@/context/AuthContext";
 import client from "@/scripts/client";
+
+import { HeaderLogo } from "@/components/headerLogo";
 
 export default function AdminTestOverviewScreen() {
   const { colors } = useTheme();
@@ -274,12 +275,7 @@ export default function AdminTestOverviewScreen() {
     <View style={{ flex: 1 }}>
       <ParallaxScrollView
         headerBackgroundColor={{ light: colors.card, dark: colors.card }}
-        headerImage={
-          <Image
-            source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={styles.reactLogo}
-          />
-        }
+        headerImage={<HeaderLogo />}
       >
         <ThemedView style={styles.container}>
           <ThemedText style={styles.title}>Test Management</ThemedText>
@@ -341,7 +337,6 @@ export default function AdminTestOverviewScreen() {
 const styles = StyleSheet.create({
   container: { padding: 20, gap: 10 },
   title: { fontSize: 24, fontWeight: "bold" },
-  reactLogo: { height: 80, width: 200, marginTop: 40, alignSelf: "center" },
   otpSection: { padding: 20, alignItems: "center" },
   adminSwitch: {
     flexDirection: "row",

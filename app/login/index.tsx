@@ -6,11 +6,11 @@ import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/AuthContext";
-import { Image } from "expo-image";
 
 import { useFocusEffect, useTheme } from "@react-navigation/native";
 
 import Footer from "@/components/Footer";
+import { HeaderLogo } from "@/components/headerLogo";
 import PasswordInput from "@/components/passwordInput";
 
 export default function LoginScreen() {
@@ -74,12 +74,7 @@ export default function LoginScreen() {
           light: colors.card,
           dark: colors.card,
         }}
-        headerImage={
-          <Image
-            source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={styles.reactLogo}
-          />
-        }
+        headerImage={<HeaderLogo />}
       >
         <ThemedView
           style={[styles.container, { backgroundColor: colors.background }]}
@@ -94,6 +89,10 @@ export default function LoginScreen() {
             placeholder="E-Mail"
             placeholderTextColor={colors.border}
             autoCapitalize="none"
+            keyboardType="email-address"
+            autoCorrect={false}
+            textContentType="emailAddress"
+            autoComplete="email"
             style={[
               styles.input,
               {
@@ -180,14 +179,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
   },
-
-  reactLogo: {
-    height: 163,
-    width: 408,
-    marginTop: 40,
-    marginLeft: 30,
-  },
-
   error: {
     fontSize: 14,
   },

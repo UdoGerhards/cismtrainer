@@ -4,7 +4,6 @@ import { ThemedView } from "@/components/themed-view";
 
 import { useAuth } from "@/context/AuthContext";
 import client from "@/scripts/client";
-import { Image } from "expo-image";
 import { useEffect, useState } from "react";
 import {
   Button,
@@ -13,6 +12,8 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+
+import { HeaderLogo } from "@/components/headerLogo";
 
 // 📊 Charts (NEU)
 import { LineChart, StackedBarChart } from "react-native-chart-kit";
@@ -250,21 +251,14 @@ export default function Performance() {
   return (
     <View style={{ flex: 1 }}>
       <ParallaxScrollView
-        style={{ backgroundColor: colors.background }}
         contentContainerStyle={{
-          backgroundColor: colors.background,
           flexGrow: 1,
         }}
         headerBackgroundColor={{
           light: colors.card,
           dark: colors.card,
         }}
-        headerImage={
-          <Image
-            source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={styles.reactLogo}
-          />
-        }
+        headerImage={<HeaderLogo />}
       >
         <ThemedView
           style={[
@@ -330,12 +324,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-  },
-  reactLogo: {
-    height: 163,
-    width: 408,
-    marginTop: 40,
-    marginLeft: 30,
   },
   chartContainer: {
     width: "100%",

@@ -3,11 +3,12 @@ import { StyleSheet, View } from "react-native";
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Image } from "expo-image";
 
 import Footer from "@/components/Footer";
 import { useTheme } from "@react-navigation/native";
 import * as Linking from "expo-linking";
+
+import { HeaderLogo } from "@/components/headerLogo";
 
 // 🔒 einfache Obfuskation
 const getEmail = () => {
@@ -37,12 +38,7 @@ export default function ImpressumScreen() {
           light: colors.card,
           dark: colors.card,
         }}
-        headerImage={
-          <Image
-            source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={styles.reactLogo}
-          />
-        }
+        headerImage={<HeaderLogo />}
       >
         <ThemedView
           style={[styles.container, { backgroundColor: colors.background }]}
@@ -89,12 +85,5 @@ const styles = StyleSheet.create({
   link: {
     fontSize: 16,
     textDecorationLine: "underline",
-  },
-
-  reactLogo: {
-    height: 163,
-    width: 408,
-    marginTop: 40,
-    marginLeft: 30,
   },
 });

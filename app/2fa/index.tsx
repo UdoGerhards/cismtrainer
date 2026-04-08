@@ -5,13 +5,14 @@ import { StyleSheet, View } from "react-native";
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Image } from "expo-image";
 
 import OtpInput, { OtpInputRef } from "@/components/ui/OTPInput";
 import { useAuth } from "@/context/AuthContext";
 
 import Footer from "@/components/Footer";
 import { useTheme } from "@react-navigation/native";
+
+import { HeaderLogo } from "@/components/headerLogo";
 
 const MAX_ATTEMPTS = 5;
 const COOLDOWN_SECONDS = 30;
@@ -91,12 +92,7 @@ export default function TwoFactorScreen() {
           light: colors.card,
           dark: colors.card,
         }}
-        headerImage={
-          <Image
-            source={require("@/assets/images/CISM_logo_RGB-1024x409.png")}
-            style={styles.reactLogo}
-          />
-        }
+        headerImage={<HeaderLogo />}
       >
         <ThemedView
           style={[styles.container, { backgroundColor: colors.background }]}
@@ -183,12 +179,5 @@ const styles = StyleSheet.create({
   info: {
     fontSize: 14,
     textAlign: "center",
-  },
-
-  reactLogo: {
-    height: 163,
-    width: 408,
-    marginTop: 40,
-    marginLeft: 30,
   },
 });
