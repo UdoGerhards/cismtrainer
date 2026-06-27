@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, StyleSheet, TextInput, View } from "react-native";
 
 import ParallaxScrollView from "@/components/parallax-scroll-view";
@@ -17,6 +17,23 @@ export default function ConfigScreen() {
   const [title, setTitle] = useState("");
   const [questionCount, setQuestionCount] = useState("");
   const [timeMinutes, setTimeMinutes] = useState("");
+
+  useEffect(() => {
+    // 1. Zwingt die Felder beim Laden der Seite dazu, absolut leer zu sein (löscht Chromes Vorbefüllung)
+    setTitle("");
+    setQuestionCount("");
+    setTimeMinutes("");
+
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`/api/data?_=${new Date().getTime()}`);
+        await response.json();
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchData();
+  }, []);
 
   const isFormValid =
     title.trim().length > 0 &&
@@ -64,6 +81,7 @@ export default function ConfigScreen() {
             onChangeText={setTitle}
             placeholder="Title of your test"
             placeholderTextColor={colors.border}
+            autoComplete="off" // 👈 Verhindert Autofill im Browser
             style={[
               styles.input,
               {
@@ -83,6 +101,7 @@ export default function ConfigScreen() {
             keyboardType="numeric"
             placeholder="For e.g. 20, 30, ..."
             placeholderTextColor={colors.border}
+            autoComplete="one-time-code" // 👈 Trickst Chromes numerisches Autofill aus
             style={[
               styles.input,
               {
@@ -102,6 +121,7 @@ export default function ConfigScreen() {
             keyboardType="numeric"
             placeholder="For e.g. 60, 120, ..."
             placeholderTextColor={colors.border}
+            autoComplete="one-time-code" // 👈 Trickst Chromes numerisches Autofill aus
             style={[
               styles.input,
               {
@@ -134,18 +154,15 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 16,
   },
-
   label: {
     fontSize: 16,
     marginBottom: 4,
   },
-
   input: {
     borderWidth: 1,
     padding: 10,
     borderRadius: 8,
   },
-
   fixToText: {
     flexDirection: "row",
     justifyContent: "space-between",

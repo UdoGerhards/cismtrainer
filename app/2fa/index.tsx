@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native"; // 🔥 TouchableOpacity hinzugefügt
 
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
@@ -13,6 +13,8 @@ import Footer from "@/components/Footer";
 import { useTheme } from "@react-navigation/native";
 
 import { HeaderLogo } from "@/components/headerLogo";
+// Hinweis: Wenn du Expo Vector Icons nutzt, kannst du hier ein Icon importieren (z.B. Ionicons)
+import { Ionicons } from "@expo/vector-icons";
 
 const MAX_ATTEMPTS = 5;
 const COOLDOWN_SECONDS = 30;
@@ -27,6 +29,9 @@ export default function TwoFactorScreen() {
 
   const [attempts, setAttempts] = useState(0);
   const [cooldown, setCooldown] = useState(0);
+
+  // Zustand für den aktuellen Code-Inhalt, um den Button nur anzuzeigen, wenn getippt wurde
+  const [currentCode, setCurrentCode] = useState("");
 
   const otpRef = useRef<OtpInputRef>(null);
 
@@ -67,16 +72,38 @@ export default function TwoFactorScreen() {
         setCooldown(COOLDOWN_SECONDS);
         setError("Code ungültig");
 
-        otpRef.current?.reset();
+        handleReset();
         return;
       }
 
-      otpRef.current?.reset();
+      handleReset();
     } catch {
       setError("Verifizierung fehlgeschlagen");
-      otpRef.current?.reset();
+      handleReset();
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Hilfsfunktion zum Zurücksetzen des lokalen States + Ref
+  const handleReset = () => {
+    otpRef.current?.reset();
+    setCurrentCode("");
+  };
+
+  // 🔥 NEU: Funktion für den Zurück-Button
+  const handleBackspace = () => {
+    if (currentCode.length === 0) return;
+
+    const newValue = currentCode.slice(0, -1);
+    setCurrentCode(newValue);
+
+    // Je nachdem, wie deine OtpInput-Komponente aufgebaut ist,
+    // benötigt sie eine dieser Methoden:
+    if ("setValue" in (otpRef.current || {})) {
+      (otpRef.current as any).setValue(newValue);
+    } else if ("handleTextChange" in (otpRef.current || {})) {
+      (otpRef.current as any).handleTextChange(newValue);
     }
   };
 
@@ -101,7 +128,6 @@ export default function TwoFactorScreen() {
             Zwei-Faktor-Authentifizierung
           </ThemedText>
 
-          {/* 🔥 Wrapper sorgt für saubere Breite */}
           <ThemedView style={styles.otpWrapper}>
             <ThemedView
               style={[
@@ -114,8 +140,26 @@ export default function TwoFactorScreen() {
             >
               <OtpInput
                 ref={otpRef}
+                // 🔥 code im State tracken, um die Länge zu kennen
+                onTextChange={(code) => setCurrentCode(code)}
                 onComplete={(code) => handleVerify(code)}
               />
+
+              {/* 🔥 NEU: Der Zurück-Button wird unter/neben dem Input angezeigt */}
+              {currentCode.length > 0 && (
+                <TouchableOpacity
+                  style={styles.backspaceButton}
+                  onPress={handleBackspace}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="backspace-outline"
+                    size={24}
+                    color={colors.text}
+                  />
+                  <ThemedText style={styles.backspaceText}>Löschen</ThemedText>
+                </TouchableOpacity>
+              )}
             </ThemedView>
           </ThemedView>
 
@@ -150,32 +194,40 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 16,
   },
-
   title: {
     fontSize: 22,
-    textAlign: "center", // 🔥 sieht besser aus
+    textAlign: "center",
   },
-
-  // 🔥 NEU: kontrolliert die Gesamtbreite
   otpWrapper: {
     width: "100%",
     maxWidth: 400,
     alignSelf: "center",
   },
-
   otpContainer: {
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderRadius: 12,
     padding: 16,
+    gap: 12, // 🔥 Abstand zwischen OTP-Feldern und dem Löschen-Button
   },
-
+  // 🔥 NEU: Styles für den Button
+  backspaceButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  backspaceText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
   error: {
     fontSize: 14,
     textAlign: "center",
   },
-
   info: {
     fontSize: 14,
     textAlign: "center",

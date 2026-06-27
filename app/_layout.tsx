@@ -20,10 +20,27 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 
 const THEME_KEY = "APP_THEME";
 
+// 🔥 Definitionen für das Bitmasken-Berechtigungssystem
+const PERM_CREATE_USERS = 2; // 0010 (Binär) -> Berechtigung Benutzer anzulegen
+const PERM_DELETE_USERS = 4; // 0100 (Binär) -> Berechtigung Benutzer zu löschen
+
+// Helper-Funktion um zu prüfen, ob ein bestimmtes Recht in der Bitmaske enthalten ist
+const hasPermission = (userRole: any, permission: number) => {
+  const roleMask = Number(userRole);
+  if (isNaN(roleMask)) return false;
+  return (roleMask & permission) === permission;
+};
+
 // ======================================================
 // 🔹 DRAWER ITEM
 // ======================================================
-function DrawerItem({ label, onPress, active, indent = false }: any) {
+function DrawerItem({
+  label,
+  onPress,
+  active,
+  indent = false,
+  doubleIndent = false,
+}: any) {
   const { colors } = useTheme();
 
   return (
@@ -33,6 +50,7 @@ function DrawerItem({ label, onPress, active, indent = false }: any) {
       style={[
         styles.itemContainer,
         indent && styles.indent,
+        doubleIndent && styles.doubleIndent,
         active && { backgroundColor: colors.primary + "20", borderRadius: 10 },
       ]}
     >
@@ -64,7 +82,7 @@ function SectionHeader({ title, open, toggle }: any) {
 }
 
 // ======================================================
-// 🔹 CUSTOM DRAWER (props hinzugefügt!)
+// 🔹 CUSTOM DRAWER
 // ======================================================
 function CustomDrawerContent(props: any) {
   const router = useRouter();
@@ -74,14 +92,19 @@ function CustomDrawerContent(props: any) {
 
   const [quizOpen, setQuizOpen] = useState(true);
   const [adminOpen, setAdminOpen] = useState(true);
+  const [userSubOpen, setUserSubOpen] = useState(false);
 
   const isActive = (path: string) => pathname === path;
 
-  // Hilfsfunktion zum Navigieren und Schließen
   const navigateTo = (path: any) => {
     props.navigation.closeDrawer();
     router.push(path);
   };
+
+  // 🔥 Vorab prüfen, ob der User überhaupt Zugriff auf irgendeinen User-Management-Unterpunkt hat
+  const canCreate = hasPermission(user?.role, PERM_CREATE_USERS);
+  const canDelete = hasPermission(user?.role, PERM_DELETE_USERS);
+  const showUserSubMenu = canCreate || canDelete;
 
   return (
     <DrawerContentScrollView
@@ -120,36 +143,59 @@ function CustomDrawerContent(props: any) {
           </>
         )}
 
-        {user?.role === "admin" && (
+        {/* 🔓 ADMINISTRATION */}
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+        <SectionHeader
+          title="ADMINISTRATION"
+          open={adminOpen}
+          toggle={() => setAdminOpen(!adminOpen)}
+        />
+
+        {adminOpen && (
           <>
-            <View
-              style={[styles.divider, { backgroundColor: colors.border }]}
+            {/* 🔓 Für jeden sichtbar: Test Management */}
+            <DrawerItem
+              label="Test Management"
+              indent
+              active={isActive("/maintainance/testBatch")}
+              onPress={() => navigateTo("/maintainance/testBatch")}
             />
-            <SectionHeader
-              title="ADMINISTRATION"
-              open={adminOpen}
-              toggle={() => setAdminOpen(!adminOpen)}
-            />
-            {adminOpen && (
+
+            {/* 🔒 BITMASKEN-PRÜFUNG: Das Untermenü blendet sich ein, wenn min. ein Recht vorhanden ist */}
+            {showUserSubMenu && (
               <>
-                <DrawerItem
-                  label="User Management"
-                  indent
-                  active={isActive("/maintainance")}
-                  onPress={() => navigateTo("/maintainance")}
-                />
-                <DrawerItem
-                  label="Test Management"
-                  indent
-                  active={isActive("/maintainance/testBatch")}
-                  onPress={() => navigateTo("/maintainance/testBatch")}
-                />
-                <DrawerItem
-                  label="AI Batch Processing"
-                  indent
-                  active={isActive("/maintainance/cismBatch")}
-                  onPress={() => navigateTo("/maintainance/cismBatch")}
-                />
+                <TouchableOpacity
+                  onPress={() => setUserSubOpen(!userSubOpen)}
+                  activeOpacity={0.7}
+                  style={[styles.itemContainer, styles.indent]}
+                >
+                  <Text style={[styles.itemText, { color: colors.text }]}>
+                    {userSubOpen ? "▼ " : "▶ "} User
+                  </Text>
+                </TouchableOpacity>
+
+                {userSubOpen && (
+                  <>
+                    {/* Link nur einblenden, wenn Bit 0010 gesetzt ist */}
+                    {canCreate && (
+                      <DrawerItem
+                        label="User anlegen"
+                        doubleIndent
+                        active={isActive("/maintainance/user/create")}
+                        onPress={() => navigateTo("/maintainance/user/create")}
+                      />
+                    )}
+                    {/* Link nur einblenden, wenn Bit 0100 gesetzt ist */}
+                    {canDelete && (
+                      <DrawerItem
+                        label="User löschen"
+                        doubleIndent
+                        active={isActive("/maintainance/user/delete")}
+                        onPress={() => navigateTo("/maintainance/user/delete")}
+                      />
+                    )}
+                  </>
+                )}
               </>
             )}
           </>
@@ -171,6 +217,11 @@ function HeaderRight({ user, router, theme, setTheme, logout }: any) {
     setTheme(newTheme);
     await AsyncStorage.setItem(THEME_KEY, newTheme);
   };
+
+  // 🔥 Prüfen, ob der User mindestens eines der Verwaltungsrechte besitzt
+  const showUserManagementLink =
+    hasPermission(user?.role, PERM_CREATE_USERS) ||
+    hasPermission(user?.role, PERM_DELETE_USERS);
 
   return (
     <View style={{ zIndex: 1000 }}>
@@ -198,6 +249,19 @@ function HeaderRight({ user, router, theme, setTheme, logout }: any) {
           >
             <Text style={{ color: colors.text }}>👤 Profile</Text>
           </TouchableOpacity>
+
+          {/* 🔒 BITMASKEN-PRÜFUNG: Zeigt das User Management im Dropdown an */}
+          {showUserManagementLink && (
+            <TouchableOpacity
+              onPress={() => {
+                setOpen(false);
+                router.push("/maintainance/users");
+              }}
+              style={styles.dropdownItem}
+            >
+              <Text style={{ color: colors.text }}>👥 User Management</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             onPress={() => {
@@ -244,7 +308,6 @@ function HeaderRight({ user, router, theme, setTheme, logout }: any) {
 // 🔹 MAIN APP CONTENT
 // ======================================================
 function AppContent() {
-  // 1. isAuthenticated hier hinzufügen
   const { loading, user, logout, isAuthenticated } = useAuth();
   const router = useRouter();
   const systemScheme = useColorScheme();
@@ -271,9 +334,8 @@ function AppContent() {
         drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
           headerTitle: "CISM Trainer",
-          // 🔥 DIESE BEIDEN ZEILEN SIND ENTSCHEIDEND:
-          headerShown: isAuthenticated, // Zeigt Header nur wenn eingeloggt
-          swipeEnabled: isAuthenticated, // Verhindert Wischen zum Öffnen wenn ausgeloggt
+          headerShown: isAuthenticated,
+          swipeEnabled: isAuthenticated,
 
           headerRight: () =>
             user ? (
@@ -292,12 +354,17 @@ function AppContent() {
         <Drawer.Screen name="question" options={{ title: "Practice" }} />
         <Drawer.Screen name="test" options={{ title: "Exam" }} />
 
-        {/* Falls die login-Route im Drawer definiert ist, verstecke sie aus der Liste */}
         <Drawer.Screen
           name="login"
           options={{
             drawerItemStyle: { display: "none" },
-            headerShown: false, // Sicherheitshalber auch hier aus
+            headerShown: false,
+          }}
+        />
+        <Drawer.Screen
+          name="profile/users"
+          options={{
+            drawerItemStyle: { display: "none" },
           }}
         />
       </Drawer>
@@ -334,6 +401,9 @@ const styles = StyleSheet.create({
   },
   indent: {
     paddingLeft: 32,
+  },
+  doubleIndent: {
+    paddingLeft: 48,
   },
   itemText: {
     fontSize: 16,

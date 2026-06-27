@@ -212,7 +212,7 @@ class Client extends Base {
   */
 
   async createUser({ firstname, lastname, email, password, token }) {
-    return this.request("/admin/user", {
+    return this.request("/maintain/user/new", {
       method: "POST",
       body: JSON.stringify({
         firstname,
@@ -220,12 +220,13 @@ class Client extends Base {
         email,
         password,
         token, // 🔐 2FA Token
+        role,
       }),
     });
   }
 
   async getAllUsers() {
-    const res = await this.request("/list/all/users", {
+    const res = await this.request("/list/users", {
       method: "GET",
     });
 
@@ -233,7 +234,7 @@ class Client extends Base {
   }
 
   async deleteUser(userId, token) {
-    return this.request("/delete/user", {
+    return this.request("/maintain/user/delete", {
       method: "DELETE",
       body: JSON.stringify({
         userId,
@@ -249,13 +250,8 @@ class Client extends Base {
   */
 
   async fetchQuestion() {
-    return this.request("/question", { method: "POST" });
-  }
-
-  async fetchQuestions(number) {
-    return this.request("/questions", {
+    return this.request("/question", {
       method: "POST",
-      body: JSON.stringify({ number }),
     });
   }
 

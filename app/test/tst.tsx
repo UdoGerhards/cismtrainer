@@ -32,11 +32,22 @@ export default function TestScreen() {
   const [currentQuestion, setCurrentQuestion] = useState<QuestionItem | null>(
     null,
   );
+  const [questionsFetched, setQuestionsFetched] = useState(0);
   const [checked, setChecked] = useState(false);
 
   const [timeLeft, setTimeLeft] = useState(timeMinutes * 60);
 
   const questionRef = useRef(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // Einzigartiger Parameter verhindert Browser-Caching der API-Antwort
+      const response = await fetch(`/api/data?_=${new Date().getTime()}`);
+      const data = await response.json();
+      // ... State setzen
+    };
+    fetchData();
+  }, []);
 
   useEffect(() => {
     const initTest = async () => {
@@ -46,12 +57,14 @@ export default function TestScreen() {
 
         setTestId(newTestId);
 
-        const data: QuestionItem[] = await client.fetchQuestions(questionCount);
+        const qstions = await client.fetchQuestion();
+        const data = qstions[0];
 
-        if (!data || data.length === 0) return;
+        if (!data) return;
 
-        setQueue(data);
-        setCurrentQuestion(data[0]);
+        setQueue([data]);
+        setCurrentQuestion(data);
+        setQuestionsFetched(1);
       } catch (err) {
         console.error(err);
       }
@@ -100,32 +113,48 @@ export default function TestScreen() {
     }
   };
 
-  const handleNext = () => {
-    setQueue((prev) => {
-      if (!currentQuestion) return prev;
+  const handleNext = async () => {
+    if (!currentQuestion) return;
 
-      let newQueue;
+    const nextQueue = [...queue];
+    const currentItem = nextQueue.shift();
 
-      if (checked) {
-        newQueue = prev.slice(1);
-      } else {
-        newQueue = [...prev.slice(1), currentQuestion];
+    // 1. Neue Frage vom Server nachladen?
+    if (
+      questionsFetched < questionCount &&
+      (nextQueue.length === 0 || !checked)
+    ) {
+      try {
+        const result = await client.fetchQuestion();
+        const data = result[0]; // ✅ Korrektur: Array entpacken
+
+        if (data) {
+          nextQueue.push(data);
+          setQuestionsFetched((prev) => prev + 1);
+        }
+      } catch (err) {
+        console.error("Fehler beim Laden der nächsten Frage:", err);
       }
+    }
 
-      if (newQueue.length === 0 && testId) {
+    // 2. Recycling: Wenn die Frage nicht beantwortet wurde (Skip), hinten anstellen
+    if (!checked && currentItem) {
+      nextQueue.push(currentItem);
+    }
+
+    // 3. Abschlussprüfung: Sind noch Fragen in der Liste?
+    if (nextQueue.length === 0) {
+      if (testId) {
         router.replace({
           pathname: "/test/ergebnis",
           params: { testId },
         });
-
-        return [];
       }
+      return;
+    }
 
-      setCurrentQuestion(newQueue[0]);
-
-      return newQueue;
-    });
-
+    setQueue(nextQueue);
+    setCurrentQuestion(nextQueue[0]);
     setChecked(false);
   };
 
@@ -139,7 +168,8 @@ export default function TestScreen() {
     );
   }
 
-  const isLastQuestion = queue.length === 1;
+  const isLastQuestion =
+    questionsFetched === questionCount && queue.length === 1;
   const nextDisabled = isLastQuestion && !checked;
 
   return (
@@ -234,23 +264,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 10,
   },
-
   timerBox: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
   },
-
   timer: {
     fontSize: 16,
     fontWeight: "bold",
   },
-
   questionWrapper: {
     marginHorizontal: 16,
     marginBottom: 12,
   },
-
   stepContainer: {
     gap: 8,
     marginBottom: 8,
@@ -258,14 +284,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flex: 1,
   },
-
   reactLogo: {
     height: 163,
     width: 408,
     marginTop: 40,
     marginLeft: 30,
   },
-
   fixToText: {
     flexDirection: "row",
     justifyContent: "space-between",

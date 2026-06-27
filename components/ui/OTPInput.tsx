@@ -9,22 +9,36 @@ import { StyleSheet, TextInput, View } from "react-native";
 
 interface OtpInputProps {
   onComplete: (otp: string) => void;
+  onChangeText?: (otp: string) => void; // 🔥 NEU: Meldet Code-Änderungen an den Screen
 }
 
 export interface OtpInputRef {
   reset: () => void;
   focus: () => void;
+  clearLast: () => void; // 🔥 NEU: Ermöglicht das Löschen der letzten Ziffer von außen
 }
 
 const OTP_LENGTH = 6;
 
 const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
-  ({ onComplete }, ref) => {
+  ({ onComplete, onChangeText }, ref) => {
     const [values, setValues] = useState<string[]>(Array(OTP_LENGTH).fill(""));
     const [activeIndex, setActiveIndex] = useState(0);
 
     const inputs = useRef<(TextInput | null)[]>([]);
     const completedRef = useRef(false);
+
+    /*
+    ==============================================
+    ZUSTANDS-UPDATES & SCREEN-BENACHRICHTIGUNG
+    ==============================================
+    */
+    const updateValues = (newValues: string[]) => {
+      setValues(newValues);
+      if (onChangeText) {
+        onChangeText(newValues.join(""));
+      }
+    };
 
     /*
     ==============================================
@@ -37,13 +51,13 @@ const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
 
     /*
     ==============================================
-    EXPOSED METHODS
+    EXPOSED METHODS (NACH AUSSEN FREIGEGEBEN)
     ==============================================
     */
     useImperativeHandle(ref, () => ({
       reset: () => {
         const empty = Array(OTP_LENGTH).fill("");
-        setValues(empty);
+        updateValues(empty);
         setActiveIndex(0);
         completedRef.current = false;
 
@@ -52,7 +66,26 @@ const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
         }, 50);
       },
       focus: () => {
-        inputs.current[0]?.focus();
+        inputs.current[activeIndex]?.focus();
+      },
+      // 🔥 NEU: Sucht die letzte befüllte Ziffer, löscht sie und setzt den Fokus dorthin
+      clearLast: () => {
+        const newValues = [...values];
+
+        let lastFilledIndex = -1;
+        for (let i = OTP_LENGTH - 1; i >= 0; i--) {
+          if (newValues[i] !== "") {
+            lastFilledIndex = i;
+            break;
+          }
+        }
+
+        if (lastFilledIndex !== -1) {
+          newValues[lastFilledIndex] = "";
+          updateValues(newValues);
+          completedRef.current = false;
+          inputs.current[lastFilledIndex]?.focus();
+        }
       },
     }));
 
@@ -78,10 +111,9 @@ const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
     ==============================================
     */
     const handleChange = (text: string, index: number) => {
-      // 🔥 PASTE SUPPORT
+      // 📋 PASTE SUPPORT
       if (text.length > 1) {
         const digits = text.replace(/\D/g, "").slice(0, OTP_LENGTH).split("");
-
         const newValues = [...values];
 
         digits.forEach((digit, i) => {
@@ -90,7 +122,7 @@ const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
           }
         });
 
-        setValues(newValues);
+        updateValues(newValues);
 
         const nextIndex = Math.min(index + digits.length, OTP_LENGTH - 1);
         inputs.current[nextIndex]?.focus();
@@ -104,7 +136,7 @@ const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
 
       const newValues = [...values];
       newValues[index] = text;
-      setValues(newValues);
+      updateValues(newValues);
 
       if (text && index < OTP_LENGTH - 1) {
         inputs.current[index + 1]?.focus();
@@ -115,7 +147,7 @@ const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
 
     /*
     ==============================================
-    BACKSPACE
+    BACKSPACE (TASTATUR)
     ==============================================
     */
     const handleKeyPress = (key: string, index: number) => {
@@ -125,12 +157,12 @@ const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
 
       if (values[index]) {
         newValues[index] = "";
-        setValues(newValues);
+        updateValues(newValues);
         completedRef.current = false;
       } else if (index > 0) {
         inputs.current[index - 1]?.focus();
         newValues[index - 1] = "";
-        setValues(newValues);
+        updateValues(newValues);
         completedRef.current = false;
       }
     };
@@ -149,10 +181,8 @@ const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
             onFocus={() => setActiveIndex(index)}
             keyboardType="number-pad"
             maxLength={1}
-            // 🔥 Autofill Support
             textContentType="oneTimeCode"
             autoComplete="sms-otp"
-            // 🔥 wichtig für Web + Mobile
             inputMode="numeric"
             style={[
               styles.input,
@@ -173,34 +203,27 @@ export default OtpInput;
 STYLES
 ==============================================
 */
-
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     justifyContent: "center",
   },
-
   input: {
     width: 50,
     height: 60,
-
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 10,
-
     backgroundColor: "#f5f5f5",
-
     textAlign: "center",
     fontSize: 22,
     fontWeight: "600",
   },
-
   active: {
     borderColor: "#000",
     borderWidth: 2,
     backgroundColor: "#fff",
   },
-
   spacing: {
     marginRight: 12,
   },

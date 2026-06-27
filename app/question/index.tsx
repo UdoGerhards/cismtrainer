@@ -55,7 +55,9 @@ export default function HomeScreen() {
 
     client
       .fetchQuestion()
-      .then((data) => {
+      .then((qstns) => {
+        let data = qstns[0];
+
         setQuestions(data);
         setChecked(false);
         setCurrentQuestionId(data?._id || null);

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  ScrollView,
   StyleSheet,
   Switch,
   TouchableOpacity,
@@ -27,9 +28,17 @@ export default function AdminTestOverviewScreen() {
   const otpRef = useRef<OtpInputRef>(null);
 
   const [allUserTests, setAllUserTests] = useState(false);
-  const [tests, setTests] = useState<any[]>([]);
+
+  // Hält das gruppierte Array aus dem Backend [{ _id: "userId", tests: [...] }]
+  const [groupedData, setGroupedData] = useState<any[]>([]);
+  // Map für die Zuordnung von userId -> "Vorname Nachname"
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
+
   const [loading, setLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+
+  // --- TAB STATE ---
+  const [activeTab, setActiveTab] = useState<string | null>(null);
 
   // --- SELECTION & EXPANSION STATES ---
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -42,9 +51,51 @@ export default function AdminTestOverviewScreen() {
   const fetchTests = async () => {
     try {
       setLoading(true);
-      const result = await client.fetchFullTestDetails(allUserTests);
-      setTests(result.tests || []);
+
+      // --- Beide Requests parallel ausführen ---
+      const [testResult, usersResult] = await Promise.all([
+        client.fetchFullTestDetails(allUserTests),
+        client.getAllUsers(),
+      ]);
+
+      console.log("Tests Response:", testResult);
+      console.log("Users Response:", usersResult);
+
+      // 1. User Map erstellen (Abfangen, falls Array in .users oder .data steckt)
+      const mapping: Record<string, string> = {};
+
+      if (Array.isArray(usersResult)) {
+        usersResult.forEach((u: any) => {
+          /*
+          console.log(u.id);
+          console.log(typeof u.id);
+          console.log(
+            `Mapping userId ${u.id} to name: ${u.firstname} ${u.lastname}`,
+          );
+          */
+          const fullName = `${u.firstname || ""} ${u.lastname || ""}`.trim();
+          //console.log(fullName);
+          mapping[u.id] = fullName || "Unbekannter User";
+        });
+      }
+
+      //console.log(mapping);
+
+      setUserMap(mapping);
+
+      // 2. Gruppen-Daten verarbeiten
+      const groups = Array.isArray(testResult)
+        ? testResult
+        : testResult.tests || [];
+      setGroupedData(groups);
       setIsVerified(true);
+
+      // Automatisch den ersten User-Tab auswählen, falls vorhanden
+      if (groups.length > 0) {
+        setActiveTab(groups[0]._id);
+      } else {
+        setActiveTab(null);
+      }
 
       // Reset selections
       setSelectedIds(new Set());
@@ -57,43 +108,38 @@ export default function AdminTestOverviewScreen() {
     }
   };
 
+  // Ermittle die Tests für den aktuell ausgewählten User-Tab
+  const currentTests =
+    groupedData.find((g) => g._id === activeTab)?.tests || [];
+
   // --- ACTIONS ---
   const toggleSelectAll = () => {
-    if (selectedIds.size === tests.length && tests.length > 0) {
+    if (selectedIds.size === currentTests.length && currentTests.length > 0) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(tests.map((t) => t._id)));
+      setSelectedIds(new Set(currentTests.map((t: any) => t._id)));
     }
   };
 
   const toggleExpandAll = () => {
-    if (expandedIds.size === tests.length && tests.length > 0) {
+    if (expandedIds.size === currentTests.length && currentTests.length > 0) {
       setExpandedIds(new Set());
     } else {
-      setExpandedIds(new Set(tests.map((t) => t._id)));
+      setExpandedIds(new Set(currentTests.map((t: any) => t._id)));
     }
   };
 
   const handleDelete = async () => {
-    // Falls nichts ausgewählt ist, brechen wir direkt ab
     if (selectedIds.size === 0) return;
 
     const idsToDelete = Array.from(selectedIds);
-    console.log("Starte direkten Löschvorgang für:", idsToDelete);
-
     try {
       setLoading(true);
-
-      // Direkter Aufruf ohne Bestätigungs-Dialog
       await client.deleteTests(idsToDelete);
 
-      // UI zurücksetzen und Liste neu laden
       setSelectedIds(new Set());
       await fetchTests();
-
-      console.log("Löschen erfolgreich abgeschlossen.");
     } catch (e: any) {
-      // Nur im Fehlerfall zeigen wir eine Meldung an
       alert(e.message || "Fehler beim Löschen der Tests");
     } finally {
       setLoading(false);
@@ -152,7 +198,6 @@ export default function AdminTestOverviewScreen() {
                 {item.name || "N/A"}
               </ThemedText>
               <ThemedText style={styles.testDate}>
-                {/* Formatiert das Datum zu dd.mm.yyyy */}
                 {new Date(item._createdAt).toLocaleDateString("de-DE", {
                   day: "2-digit",
                   month: "2-digit",
@@ -165,11 +210,11 @@ export default function AdminTestOverviewScreen() {
               <View style={styles.statBadge}>
                 <ThemedText style={styles.smallStatText}>
                   <ThemedText style={{ color: "#4CAF50" }}>
-                    Correct: {item.correct}
+                    Richtig: {item.correct}
                   </ThemedText>
                   <ThemedText style={styles.statDivider}> / </ThemedText>
                   <ThemedText style={{ color: "#F44336" }}>
-                    Wrong: {item.wrong}
+                    Falsch: {item.wrong}
                   </ThemedText>
                 </ThemedText>
               </View>
@@ -211,16 +256,16 @@ export default function AdminTestOverviewScreen() {
                   </ThemedText>
                   <View style={styles.answerInfo}>
                     <ThemedText style={styles.baseFontSize}>
-                      Correct answer: {correctOption?.text || q.correct}
+                      Richtige Antwort: {correctOption?.text || q.correct}
                     </ThemedText>
                     <ThemedText style={styles.baseFontSize}>
-                      User answer:{" "}
+                      Nutzer-Antwort:{" "}
                       <ThemedText
                         style={{
                           color: isQuestionCorrect ? "#4CAF50" : "#F44336",
                         }}
                       >
-                        {q.user || "No answer"}
+                        {q.user || "Keine Antwort"}
                       </ThemedText>
                     </ThemedText>
                   </View>
@@ -233,22 +278,21 @@ export default function AdminTestOverviewScreen() {
     );
   };
 
-  // Hilfs-Komponente für die Buttons
   const ActionButtons = () => (
     <View style={styles.actionRow}>
       <TouchableOpacity onPress={toggleSelectAll} style={styles.actionBtn}>
         <ThemedText style={styles.actionBtnText}>
-          {selectedIds.size === tests.length && tests.length > 0
-            ? "Deselect All"
-            : "Select All"}
+          {selectedIds.size === currentTests.length && currentTests.length > 0
+            ? "Auswahl aufheben"
+            : "Alle auswählen"}
         </ThemedText>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={toggleExpandAll} style={styles.actionBtn}>
         <ThemedText style={styles.actionBtnText}>
-          {expandedIds.size === tests.length && tests.length > 0
-            ? "Collapse All"
-            : "Expand All"}
+          {expandedIds.size === currentTests.length && currentTests.length > 0
+            ? "Alle einklappen"
+            : "Alle ausklappen"}
         </ThemedText>
       </TouchableOpacity>
 
@@ -265,7 +309,7 @@ export default function AdminTestOverviewScreen() {
         ]}
       >
         <ThemedText style={[styles.actionBtnText, { color: "#ff4444" }]}>
-          {loading ? "Deleting..." : `Delete (${selectedIds.size})`}
+          {loading ? "Lösche..." : `Löschen (${selectedIds.size})`}
         </ThemedText>
       </TouchableOpacity>
     </View>
@@ -278,12 +322,12 @@ export default function AdminTestOverviewScreen() {
         headerImage={<HeaderLogo />}
       >
         <ThemedView style={styles.container}>
-          <ThemedText style={styles.title}>Test Management</ThemedText>
+          <ThemedText style={styles.title}>Test Verwaltung</ThemedText>
 
           {!isVerified ? (
             <View style={styles.otpSection}>
               <ThemedText style={{ marginBottom: 10 }}>
-                Admin Authorization required:
+                Admin-Autorisierung erforderlich:
               </ThemedText>
               <OtpInput ref={otpRef} onComplete={() => fetchTests()} />
             </View>
@@ -293,7 +337,7 @@ export default function AdminTestOverviewScreen() {
                 <View
                   style={[styles.adminSwitch, { borderColor: colors.primary }]}
                 >
-                  <ThemedText>Show all user tests</ThemedText>
+                  <ThemedText>Tests aller Benutzer anzeigen</ThemedText>
                   <Switch
                     value={allUserTests}
                     onValueChange={setAllUserTests}
@@ -302,7 +346,53 @@ export default function AdminTestOverviewScreen() {
                 </View>
               )}
 
-              {tests.length > 0 && <ActionButtons />}
+              {/* --- HORIZONTALE REITERKARTEN MIT KORREKTEM NAMENSTAUCH --- */}
+              {groupedData.length > 0 && (
+                <View style={styles.tabsWrapper}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.tabsContainer}
+                  >
+                    {groupedData.map((group) => {
+                      const isActive = activeTab === group._id;
+
+                      // Greift auf die robust befüllte userMap zu
+                      const displayName =
+                        userMap[group._id] || group._id || "Unbekannter User";
+
+                      return (
+                        <TouchableOpacity
+                          key={group._id}
+                          style={[
+                            styles.tabButton,
+                            { borderColor: colors.border },
+                            isActive && {
+                              backgroundColor: colors.primary,
+                              borderColor: colors.primary,
+                            },
+                          ]}
+                          onPress={() => {
+                            setActiveTab(group._id);
+                            setSelectedIds(new Set());
+                          }}
+                        >
+                          <ThemedText
+                            style={[
+                              styles.tabButtonText,
+                              isActive && { color: "#fff", fontWeight: "700" },
+                            ]}
+                          >
+                            {displayName} ({group.tests?.length || 0})
+                          </ThemedText>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
+
+              {currentTests.length > 0 && <ActionButtons />}
 
               {loading ? (
                 <ActivityIndicator
@@ -312,19 +402,19 @@ export default function AdminTestOverviewScreen() {
                 />
               ) : (
                 <FlatList
-                  data={tests}
+                  data={currentTests}
                   renderItem={renderTestItem}
-                  keyExtractor={(t) => t._id} // Geändert auf _id von MongoDB
+                  keyExtractor={(t) => t._id}
                   scrollEnabled={false}
                   ListEmptyComponent={
                     <ThemedText style={styles.empty}>
-                      No tests found.
+                      Keine Tests für diesen Benutzer gefunden.
                     </ThemedText>
                   }
                 />
               )}
 
-              {tests.length > 5 && !loading && <ActionButtons />}
+              {currentTests.length > 5 && !loading && <ActionButtons />}
             </>
           )}
         </ThemedView>
@@ -346,6 +436,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 10,
     borderStyle: "dashed",
+    marginBottom: 5,
+  },
+  tabsWrapper: {
+    marginVertical: 10,
+  },
+  tabsLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 6,
+    opacity: 0.7,
+  },
+  tabsContainer: {
+    flexDirection: "row",
+    gap: 8,
+    paddingBottom: 4,
+  },
+  tabButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    backgroundColor: "transparent",
+  },
+  tabButtonText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
   actionRow: {
     flexDirection: "row",

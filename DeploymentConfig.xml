@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <projectName>CismTrainer-Frontend</projectName>
+    <webroot>/var/www/cismtrainer</webroot>
+    <server>smallbox</server>
+    <deployUser>deployuser</deployUser>
+    <deployPass>2Stacy-6Orate-brood-national6-tory1-Stahl</deployPass>
+    <appMode>react</appMode> 
+    <localBackupsKeep>5</localBackupsKeep>
+    <remoteBackupsKeep>5</remoteBackupsKeep>
+    <excludes>.git,.env,__test__,.github,.gitignore,.vscode,_dist</excludes>
+    <restartNginx>true</restartNginx>
+</config>

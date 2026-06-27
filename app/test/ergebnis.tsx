@@ -30,6 +30,16 @@ export default function ErgebnisScreen() {
   );
 
   useEffect(() => {
+    const fetchData = async () => {
+      // Einzigartiger Parameter verhindert Browser-Caching der API-Antwort
+      const response = await fetch(`/api/data?_=${new Date().getTime()}`);
+      const data = await response.json();
+      // ... State setzen
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
     async function loadResult() {
       try {
         const res = await client.calculateTestResults(testId);
