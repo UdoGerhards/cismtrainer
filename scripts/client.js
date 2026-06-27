@@ -272,10 +272,10 @@ class Client extends Base {
     });
   }
 
-  async createTest(userId, name) {
+  async createTest(name) {
     return this.request("/test", {
       method: "POST",
-      body: JSON.stringify({ userId, name }),
+      body: JSON.stringify({ name }),
     });
   }
 

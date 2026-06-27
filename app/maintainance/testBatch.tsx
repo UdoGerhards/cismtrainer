@@ -66,20 +66,19 @@ export default function AdminTestOverviewScreen() {
 
       if (Array.isArray(usersResult)) {
         usersResult.forEach((u: any) => {
-          /*
           console.log(u.id);
           console.log(typeof u.id);
           console.log(
             `Mapping userId ${u.id} to name: ${u.firstname} ${u.lastname}`,
           );
-          */
+
           const fullName = `${u.firstname || ""} ${u.lastname || ""}`.trim();
           //console.log(fullName);
           mapping[u.id] = fullName || "Unbekannter User";
         });
       }
 
-      //console.log(mapping);
+      console.log(mapping);
 
       setUserMap(mapping);
 

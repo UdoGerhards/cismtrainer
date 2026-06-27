@@ -43,6 +43,9 @@ export default function ErgebnisScreen() {
     async function loadResult() {
       try {
         const res = await client.calculateTestResults(testId);
+
+        console.log(res);
+
         const evalRes = await client.getTestEvaluation(testId);
 
         setResult(res);

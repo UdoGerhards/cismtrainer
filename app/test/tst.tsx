@@ -52,7 +52,7 @@ export default function TestScreen() {
   useEffect(() => {
     const initTest = async () => {
       try {
-        const result = await client.createTest(user?.id, title);
+        const result = await client.createTest(title);
         const newTestId = result._id;
 
         setTestId(newTestId);
