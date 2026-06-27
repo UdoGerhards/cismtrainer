@@ -211,7 +211,7 @@ class Client extends Base {
   ==========================================
   */
 
-  async createUser({ firstname, lastname, email, password, token }) {
+  async createUser({ firstname, lastname, email, password, role }) {
     return this.request("/maintain/user/new", {
       method: "POST",
       body: JSON.stringify({
@@ -219,7 +219,6 @@ class Client extends Base {
         lastname,
         email,
         password,
-        token, // 🔐 2FA Token
         role,
       }),
     });
@@ -412,7 +411,7 @@ class Client extends Base {
    * @param {string[]} testIds - Array von Test-IDs als Strings.
    */
   async deleteTests(testIds) {
-    const url = `/admin/tests/delete`;
+    const url = `/maintain/tests/delete`;
 
     const data = await this.request(url, {
       method: "DELETE",

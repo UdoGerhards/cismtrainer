@@ -20,14 +20,22 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 
 const THEME_KEY = "APP_THEME";
 
-// 🔥 Definitionen für das Bitmasken-Berechtigungssystem
-const PERM_CREATE_USERS = 2; // 0010 (Binär) -> Berechtigung Benutzer anzulegen
-const PERM_DELETE_USERS = 4; // 0100 (Binär) -> Berechtigung Benutzer zu löschen
+// 🔐 Vollständiges Bitmasken-Berechtigungssystem
+const PERM_USER = 1; // 000001 -> Standard-Basisrecht (kein Menü-Einfluss)
+const PERM_CREATE_USERS = 2; // 000010 -> Berechtigung Benutzer anzulegen
+const PERM_DELETE_USERS = 4; // 000100 -> Berechtigung Benutzer zu löschen
+const PERM_DELETE_TESTS = 8; // 001000 -> Berechtigung für Test Management
+const PERM_KI_USE_ALLOWED = 16; // 010000 -> Keine Auswirkungen auf diese Anzeige
+const PERM_ADMIN = 63; // 111111 -> Adminuser (alle Rechte freigeschaltet)
 
 // Helper-Funktion um zu prüfen, ob ein bestimmtes Recht in der Bitmaske enthalten ist
 const hasPermission = (userRole: any, permission: number) => {
   const roleMask = Number(userRole);
   if (isNaN(roleMask)) return false;
+
+  // Wenn der User Admin ist, hat er implizit alle Rechte
+  if ((roleMask & PERM_ADMIN) === PERM_ADMIN) return true;
+
   return (roleMask & permission) === permission;
 };
 
@@ -91,7 +99,9 @@ function CustomDrawerContent(props: any) {
   const { user } = useAuth();
 
   const [quizOpen, setQuizOpen] = useState(true);
-  const [adminOpen, setAdminOpen] = useState(true);
+
+  // 📉 Hier geändert: Beide Menüs starten standardmäßig auf `false` (eingeklappt)
+  const [adminOpen, setAdminOpen] = useState(false);
   const [userSubOpen, setUserSubOpen] = useState(false);
 
   const isActive = (path: string) => pathname === path;
@@ -101,10 +111,16 @@ function CustomDrawerContent(props: any) {
     router.push(path);
   };
 
-  // 🔥 Vorab prüfen, ob der User überhaupt Zugriff auf irgendeinen User-Management-Unterpunkt hat
+  // 🔍 Berechtigungen für das Hamburger Menü auswerten
+  const showTestManagement = hasPermission(user?.role, PERM_DELETE_TESTS);
   const canCreate = hasPermission(user?.role, PERM_CREATE_USERS);
   const canDelete = hasPermission(user?.role, PERM_DELETE_USERS);
-  const showUserSubMenu = canCreate || canDelete;
+
+  // "User" (Hauptpunkt) blendet sich nur ein, wenn man anlegen ODER löschen darf
+  const showUserMenu = canCreate || canDelete;
+
+  // 🔒 Bestimmt, ob die gesamte "ADMINISTRATION"-Sektion sichtbar sein soll
+  const showAdministrationSection = showTestManagement || showUserMenu;
 
   return (
     <DrawerContentScrollView
@@ -143,56 +159,68 @@ function CustomDrawerContent(props: any) {
           </>
         )}
 
-        {/* 🔓 ADMINISTRATION */}
-        <View style={[styles.divider, { backgroundColor: colors.border }]} />
-        <SectionHeader
-          title="ADMINISTRATION"
-          open={adminOpen}
-          toggle={() => setAdminOpen(!adminOpen)}
-        />
-
-        {adminOpen && (
+        {/* 🔓 ADMINISTRATION SEKTION (Blendet sich komplett aus, wenn Rolle nur 000001 ist) */}
+        {showAdministrationSection && (
           <>
-            {/* 🔓 Für jeden sichtbar: Test Management */}
-            <DrawerItem
-              label="Test Management"
-              indent
-              active={isActive("/maintainance/testBatch")}
-              onPress={() => navigateTo("/maintainance/testBatch")}
+            <View
+              style={[styles.divider, { backgroundColor: colors.border }]}
+            />
+            <SectionHeader
+              title="ADMINISTRATION"
+              open={adminOpen}
+              toggle={() => setAdminOpen(!adminOpen)}
             />
 
-            {/* 🔒 BITMASKEN-PRÜFUNG: Das Untermenü blendet sich ein, wenn min. ein Recht vorhanden ist */}
-            {showUserSubMenu && (
+            {adminOpen && (
               <>
-                <TouchableOpacity
-                  onPress={() => setUserSubOpen(!userSubOpen)}
-                  activeOpacity={0.7}
-                  style={[styles.itemContainer, styles.indent]}
-                >
-                  <Text style={[styles.itemText, { color: colors.text }]}>
-                    {userSubOpen ? "▼ " : "▶ "} User
-                  </Text>
-                </TouchableOpacity>
+                {/* 📋 BITMASKEN-PRÜFUNG: Test Management einblenden */}
+                {showTestManagement && (
+                  <DrawerItem
+                    label="Test Management"
+                    indent
+                    active={isActive("/maintainance/testBatch")}
+                    onPress={() => navigateTo("/maintainance/testBatch")}
+                  />
+                )}
 
-                {userSubOpen && (
+                {/* 👤 BITMASKEN-PRÜFUNG: Hauptpunkt "User" einblenden */}
+                {showUserMenu && (
                   <>
-                    {/* Link nur einblenden, wenn Bit 0010 gesetzt ist */}
-                    {canCreate && (
-                      <DrawerItem
-                        label="User anlegen"
-                        doubleIndent
-                        active={isActive("/maintainance/user/create")}
-                        onPress={() => navigateTo("/maintainance/user/create")}
-                      />
-                    )}
-                    {/* Link nur einblenden, wenn Bit 0100 gesetzt ist */}
-                    {canDelete && (
-                      <DrawerItem
-                        label="User löschen"
-                        doubleIndent
-                        active={isActive("/maintainance/user/delete")}
-                        onPress={() => navigateTo("/maintainance/user/delete")}
-                      />
+                    <TouchableOpacity
+                      onPress={() => setUserSubOpen(!userSubOpen)}
+                      activeOpacity={0.7}
+                      style={[styles.itemContainer, styles.indent]}
+                    >
+                      <Text style={[styles.itemText, { color: colors.text }]}>
+                        {userSubOpen ? "▼ " : "▶ "} User
+                      </Text>
+                    </TouchableOpacity>
+
+                    {userSubOpen && (
+                      <>
+                        {/* ➕ Link nur einblenden, wenn Bit 000010 (oder Admin) gesetzt ist */}
+                        {canCreate && (
+                          <DrawerItem
+                            label="User anlegen"
+                            doubleIndent
+                            active={isActive("/maintainance/user/create")}
+                            onPress={() =>
+                              navigateTo("/maintainance/user/create")
+                            }
+                          />
+                        )}
+                        {/* ❌ Link nur einblenden, wenn Bit 000100 (oder Admin) gesetzt ist */}
+                        {canDelete && (
+                          <DrawerItem
+                            label="User löschen"
+                            doubleIndent
+                            active={isActive("/maintainance/user/delete")}
+                            onPress={() =>
+                              navigateTo("/maintainance/user/delete")
+                            }
+                          />
+                        )}
+                      </>
                     )}
                   </>
                 )}

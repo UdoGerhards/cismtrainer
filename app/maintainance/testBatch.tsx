@@ -5,7 +5,6 @@ import {
   FlatList,
   ScrollView,
   StyleSheet,
-  Switch,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -22,20 +21,31 @@ import client from "@/scripts/client";
 
 import { HeaderLogo } from "@/components/headerLogo";
 
+// Definition der Bitmasken
+const PERM_DELETE_TESTS = 4;
+const PERM_ADMIN = 63;
+
 export default function AdminTestOverviewScreen() {
   const { colors } = useTheme();
   const { user } = useAuth();
   const otpRef = useRef<OtpInputRef>(null);
 
-  const [allUserTests, setAllUserTests] = useState(false);
+  const userPermissions = user?.role || 0;
 
-  // Hält das gruppierte Array aus dem Backend [{ _id: "userId", tests: [...] }]
+  // Echte, strikte Admin-Prüfung
+  const isAdmin = (userPermissions & PERM_ADMIN) === PERM_ADMIN;
+  const canDeleteOwn =
+    (userPermissions & PERM_DELETE_TESTS) === PERM_DELETE_TESTS;
+
+  // Admin sieht standardmäßig immer alles, User niemals
+  const allUserTests = isAdmin;
+
   const [groupedData, setGroupedData] = useState<any[]>([]);
-  // Map für die Zuordnung von userId -> "Vorname Nachname"
   const [userMap, setUserMap] = useState<Record<string, string>>({});
-
   const [loading, setLoading] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
+
+  // Nicht-Admins überspringen die Admin-OTP-Verifizierung komplett
+  const [isVerified, setIsVerified] = useState(!isAdmin && canDeleteOwn);
 
   // --- TAB STATE ---
   const [activeTab, setActiveTab] = useState<string | null>(null);
@@ -45,58 +55,61 @@ export default function AdminTestOverviewScreen() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (isVerified) fetchTests();
-  }, [allUserTests]);
+    if (isVerified) {
+      fetchTests();
+    }
+  }, [isVerified]);
 
   const fetchTests = async () => {
     try {
       setLoading(true);
 
-      // --- Beide Requests parallel ausführen ---
       const [testResult, usersResult] = await Promise.all([
         client.fetchFullTestDetails(allUserTests),
-        client.getAllUsers(),
+        isAdmin ? client.getAllUsers() : Promise.resolve([]),
       ]);
 
-      console.log("Tests Response:", testResult);
-      console.log("Users Response:", usersResult);
-
-      // 1. User Map erstellen (Abfangen, falls Array in .users oder .data steckt)
+      // 1. User Map befüllen
       const mapping: Record<string, string> = {};
 
-      if (Array.isArray(usersResult)) {
+      if (isAdmin && Array.isArray(usersResult)) {
         usersResult.forEach((u: any) => {
-          console.log(u.id);
-          console.log(typeof u.id);
-          console.log(
-            `Mapping userId ${u.id} to name: ${u.firstname} ${u.lastname}`,
-          );
-
           const fullName = `${u.firstname || ""} ${u.lastname || ""}`.trim();
-          //console.log(fullName);
-          mapping[u.id] = fullName || "Unbekannter User";
+          mapping[u.id || u._id] = fullName || "Unbekannter User";
         });
+      } else if (user) {
+        const fullName =
+          `${user.firstname || ""} ${user.lastname || ""}`.trim();
+        mapping[user.id || user._id] = fullName || "Mein Account";
       }
-
-      console.log(mapping);
 
       setUserMap(mapping);
 
       // 2. Gruppen-Daten verarbeiten
-      const groups = Array.isArray(testResult)
+      let groups = Array.isArray(testResult)
         ? testResult
         : testResult.tests || [];
-      setGroupedData(groups);
-      setIsVerified(true);
 
-      // Automatisch den ersten User-Tab auswählen, falls vorhanden
+      if (!isAdmin) {
+        if (groups.length === 0 || !groups[0].hasOwnProperty("tests")) {
+          groups = [{ _id: user?.id || user?._id || "me", tests: groups }];
+        } else {
+          groups = groups.filter((g: any) => g._id === (user?.id || user?._id));
+        }
+      }
+
+      setGroupedData(groups);
+
+      // Tab setzen
       if (groups.length > 0) {
-        setActiveTab(groups[0]._id);
+        const currentTabExists = groups.some((g) => g._id === activeTab);
+        if (!currentTabExists || !activeTab) {
+          setActiveTab(groups[0]._id);
+        }
       } else {
         setActiveTab(null);
       }
 
-      // Reset selections
       setSelectedIds(new Set());
       setExpandedIds(new Set());
     } catch (err: any) {
@@ -107,7 +120,6 @@ export default function AdminTestOverviewScreen() {
     }
   };
 
-  // Ermittle die Tests für den aktuell ausgewählten User-Tab
   const currentTests =
     groupedData.find((g) => g._id === activeTab)?.tests || [];
 
@@ -132,10 +144,10 @@ export default function AdminTestOverviewScreen() {
     if (selectedIds.size === 0) return;
 
     const idsToDelete = Array.from(selectedIds);
+
     try {
       setLoading(true);
       await client.deleteTests(idsToDelete);
-
       setSelectedIds(new Set());
       await fetchTests();
     } catch (e: any) {
@@ -159,11 +171,9 @@ export default function AdminTestOverviewScreen() {
     setExpandedIds(next);
   };
 
-  // --- RENDER FUNCTIONS ---
   const renderTestItem = ({ item }: { item: any }) => {
     const isExpanded = expandedIds.has(item._id);
     const isSelected = selectedIds.has(item._id);
-
     const allQuestions = [
       ...(item.correctQuestions || []),
       ...(item.wrongQuestions || []),
@@ -321,31 +331,25 @@ export default function AdminTestOverviewScreen() {
         headerImage={<HeaderLogo />}
       >
         <ThemedView style={styles.container}>
-          <ThemedText style={styles.title}>Test Verwaltung</ThemedText>
+          <ThemedText style={styles.title}>
+            {isAdmin ? "Test Verwaltung" : "Meine Testergebnisse"}
+          </ThemedText>
 
           {!isVerified ? (
             <View style={styles.otpSection}>
               <ThemedText style={{ marginBottom: 10 }}>
                 Admin-Autorisierung erforderlich:
               </ThemedText>
-              <OtpInput ref={otpRef} onComplete={() => fetchTests()} />
+              <OtpInput ref={otpRef} onComplete={() => setIsVerified(true)} />
             </View>
           ) : (
             <>
-              {user?.role === "admin" && (
-                <View
-                  style={[styles.adminSwitch, { borderColor: colors.primary }]}
-                >
-                  <ThemedText>Tests aller Benutzer anzeigen</ThemedText>
-                  <Switch
-                    value={allUserTests}
-                    onValueChange={setAllUserTests}
-                    trackColor={{ true: colors.primary }}
-                  />
-                </View>
-              )}
+              {/* 1. GRAUE LINIE: Zwischen Titel und Tabs */}
+              <View
+                style={[styles.separator, { backgroundColor: colors.border }]}
+              />
 
-              {/* --- HORIZONTALE REITERKARTEN MIT KORREKTEM NAMENSTAUCH --- */}
+              {/* Reiterkarten-Leiste */}
               {groupedData.length > 0 && (
                 <View style={styles.tabsWrapper}>
                   <ScrollView
@@ -355,10 +359,8 @@ export default function AdminTestOverviewScreen() {
                   >
                     {groupedData.map((group) => {
                       const isActive = activeTab === group._id;
-
-                      // Greift auf die robust befüllte userMap zu
                       const displayName =
-                        userMap[group._id] || group._id || "Unbekannter User";
+                        userMap[group._id] || "Unbekannter User";
 
                       return (
                         <TouchableOpacity
@@ -391,6 +393,20 @@ export default function AdminTestOverviewScreen() {
                 </View>
               )}
 
+              {/* 2. GRAUE LINIE: Zwischen Tabs und Buttonleiste */}
+              {groupedData.length > 0 && (
+                <View
+                  style={[
+                    styles.separator,
+                    {
+                      backgroundColor: colors.border,
+                      marginTop: 4,
+                      marginBottom: 10,
+                    },
+                  ]}
+                />
+              )}
+
               {currentTests.length > 0 && <ActionButtons />}
 
               {loading ? (
@@ -407,7 +423,7 @@ export default function AdminTestOverviewScreen() {
                   scrollEnabled={false}
                   ListEmptyComponent={
                     <ThemedText style={styles.empty}>
-                      Keine Tests für diesen Benutzer gefunden.
+                      Keine Tests gefunden.
                     </ThemedText>
                   }
                 />
@@ -425,32 +441,11 @@ export default function AdminTestOverviewScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 20, gap: 10 },
-  title: { fontSize: 24, fontWeight: "bold" },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 5 },
   otpSection: { padding: 20, alignItems: "center" },
-  adminSwitch: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 12,
-    borderWidth: 1,
-    borderRadius: 10,
-    borderStyle: "dashed",
-    marginBottom: 5,
-  },
-  tabsWrapper: {
-    marginVertical: 10,
-  },
-  tabsLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 6,
-    opacity: 0.7,
-  },
-  tabsContainer: {
-    flexDirection: "row",
-    gap: 8,
-    paddingBottom: 4,
-  },
+  separator: { height: 1, width: "100%" }, // Basis-Style für die grauen Linien
+  tabsWrapper: { marginVertical: 10 },
+  tabsContainer: { flexDirection: "row", gap: 8, paddingBottom: 4 },
   tabButton: {
     paddingVertical: 8,
     paddingHorizontal: 14,
@@ -458,10 +453,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: "transparent",
   },
-  tabButtonText: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
+  tabButtonText: { fontSize: 13, fontWeight: "500" },
   actionRow: {
     flexDirection: "row",
     justifyContent: "flex-end",

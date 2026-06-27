@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 const PERM_USER = 1; // 000001 -> Standard-Basisrecht
 const PERM_CREATE_USERS = 2; // 000010 -> Benutzer anlegen
 const PERM_DELETE_USERS = 4; // 000100 -> Benutzer löschen
-const PERM_DELETE_TESTS = 8; // 001000 -> Tests löschen
+const PERM_DELETE_TESTS = 8; // 001000 -> Tests löschen / Test Management
 const PERM_KI_USE_ALLOWED = 16; // 010000 -> Benutzung von KI erlaubt ("Explain")
 const PERM_ADMIN = 63; // 111111 -> Adminuser
 
@@ -204,6 +204,31 @@ export default function UserManagementScreen() {
     otpRef.current?.reset();
   }, []);
 
+  // 👁️ Funktion zum gleichzeitigen Umschalten beider Passwort-Sichtbarkeiten
+  const togglePasswordVisibility = () => {
+    const newVisibility = !showPassword;
+    setShowPassword(newVisibility);
+    setShowConfirmPassword(newVisibility);
+  };
+
+  /*
+  ==========================================
+  👁️ ANZEIGE-LOGIK FÜR DAS HAMBURGER MENÜ
+  ==========================================
+  */
+  const isAdmin = (selectedRoleMask & PERM_ADMIN) === PERM_ADMIN;
+
+  // Menüpunkte basierend auf den Bitmasken filtern
+  const showTestManagement =
+    isAdmin || (selectedRoleMask & PERM_DELETE_TESTS) === PERM_DELETE_TESTS;
+  const showUserAnlegen =
+    isAdmin || (selectedRoleMask & PERM_CREATE_USERS) === PERM_CREATE_USERS;
+  const showUserLoeschen =
+    isAdmin || (selectedRoleMask & PERM_DELETE_USERS) === PERM_DELETE_USERS;
+
+  // "User" (Hauptpunkt) wird nur angezeigt, wenn "Anlegen" ODER "Löschen" aktiv ist (verhindert Anzeige bei reinem 000001)
+  const showUserMenu = isAdmin || showUserAnlegen || showUserLoeschen;
+
   /*
   ==========================================
   SCREEN RENDER LOGIC
@@ -354,10 +379,10 @@ export default function UserManagementScreen() {
             />
             <TouchableOpacity
               style={styles.eyeWrapper}
-              onPress={() => setShowPassword(!showPassword)}
+              onPress={togglePasswordVisibility}
             >
               <Ionicons
-                name={showPassword ? "eye" : "eye-off"}
+                name={showPassword ? "eye-off" : "eye"}
                 size={22}
                 color={colors.text}
                 style={{ opacity: 0.7 }}
@@ -378,10 +403,10 @@ export default function UserManagementScreen() {
             />
             <TouchableOpacity
               style={styles.eyeWrapper}
-              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              onPress={togglePasswordVisibility}
             >
               <Ionicons
-                name={showConfirmPassword ? "eye" : "eye-off"}
+                name={showConfirmPassword ? "eye-off" : "eye"}
                 size={22}
                 color={colors.text}
                 style={{ opacity: 0.7 }}
@@ -466,7 +491,7 @@ export default function UserManagementScreen() {
                   )}
                 </View>
                 <ThemedText style={styles.checkboxLabel}>
-                  Tests löschen
+                  Test Management / Tests löschen
                 </ThemedText>
               </TouchableOpacity>
 
@@ -548,6 +573,95 @@ export default function UserManagementScreen() {
               {success}
             </ThemedText>
           ) : null}
+
+          {/* -------------------------------------------------------------
+              🍔 LIVE-PREVIEW: HAMBURGER MENÜ ANZEIGE
+              ------------------------------------------------------------- */}
+          <View
+            style={[
+              styles.menuPreviewContainer,
+              { borderColor: colors.border },
+            ]}
+          >
+            <ThemedText style={styles.menuPreviewTitle}>
+              Live-Vorschau: Hamburger Menü (aktuelle Maske: {selectedRoleMask})
+            </ThemedText>
+
+            <View style={styles.hamburgerMenuMock}>
+              {/* 📋 Test Management */}
+              {showTestManagement && (
+                <View style={styles.menuItemMock}>
+                  <Ionicons
+                    name="flask-outline"
+                    size={18}
+                    color={colors.text}
+                  />
+                  <ThemedText style={styles.menuItemText}>
+                    Test Management
+                  </ThemedText>
+                </View>
+              )}
+
+              {/* 👤 User Hauptordner/-gruppe */}
+              {showUserMenu && (
+                <View style={styles.menuGroupMock}>
+                  <View style={styles.menuItemMock}>
+                    <Ionicons
+                      name="people-outline"
+                      size={18}
+                      color={colors.text}
+                    />
+                    <ThemedText
+                      style={[styles.menuItemText, { fontWeight: "bold" }]}
+                    >
+                      User
+                    </ThemedText>
+                  </View>
+
+                  {/* ➕ User anlegen */}
+                  {showUserAnlegen && (
+                    <View style={styles.subMenuItemMock}>
+                      <Ionicons
+                        name="person-add-outline"
+                        size={16}
+                        color={colors.text}
+                      />
+                      <ThemedText style={styles.menuItemText}>
+                        User anlegen
+                      </ThemedText>
+                    </View>
+                  )}
+
+                  {/* ❌ User löschen */}
+                  {showUserLoeschen && (
+                    <View style={styles.subMenuItemMock}>
+                      <Ionicons
+                        name="person-remove-outline"
+                        size={16}
+                        color={colors.text}
+                      />
+                      <ThemedText style={styles.menuItemText}>
+                        User löschen
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Wenn gar nichts sichtbar ist */}
+              {!showTestManagement && !showUserMenu && (
+                <ThemedText
+                  style={{
+                    fontStyle: "italic",
+                    color: colors.border,
+                    padding: 8,
+                  }}
+                >
+                  (Hamburger Menü ist komplett leer)
+                </ThemedText>
+              )}
+            </View>
+          </View>
         </ThemedView>
       </ParallaxScrollView>
 
@@ -671,5 +785,42 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     padding: 16,
+  },
+  /* Styles für das Demo-Menü unten */
+  menuPreviewContainer: {
+    marginTop: 30,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 16,
+    borderStyle: "dashed",
+  },
+  menuPreviewTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 10,
+    opacity: 0.7,
+  },
+  hamburgerMenuMock: {
+    padding: 8,
+    gap: 4,
+  },
+  menuItemMock: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 8,
+  },
+  subMenuItemMock: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 6,
+    paddingLeft: 28,
+  },
+  menuItemText: {
+    fontSize: 16,
+  },
+  menuGroupMock: {
+    flexDirection: "column",
   },
 });
