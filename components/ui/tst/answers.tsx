@@ -1,11 +1,11 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import Checkbox from "@/components/ui/checkbox";
-import { Answer } from "@/scripts/model/if_answer";
 import client from "@/scripts/client";
+import { Answer } from "@/scripts/model/if_answer";
+import { useTheme } from "@react-navigation/native";
 import React, { useState } from "react";
 import { StyleSheet, TouchableOpacity } from "react-native";
-import { useTheme } from "@react-navigation/native";
 
 export default function Answers({
   answers,
@@ -14,28 +14,56 @@ export default function Answers({
   questionId,
   test,
   user,
+  onSelectAnswer, // 🌟 NEU: Dieses Callback informiert die Question-Komponente über den Klick
 }: {
   answers: Answer[];
   correct: string;
   checked: boolean;
-  questionId: number;
-  test: number;
+  questionId: string | number; // Flexibel gehalten, falls IDs Strings sind
+  test: string | number | null;
   user: any;
+  onSelectAnswer: () => void; // 🌟 NEU
 }) {
   const { colors, dark } = useTheme();
 
   const [selected, setSelected] = useState<string | null>(null);
 
-  const handleSelect = (answer: Answer) => {
-    if (checked) return;
+  const handleSelect = async (answer: Answer) => {
+    if (checked) return; // Wenn schon ausgewertet, Klicks sperren
 
     setSelected(answer._id);
 
+    // 1. Ergebnis lokal prüfen
     const result = answer.answer.trim() === correct.trim();
-
     const safeTest = typeof test === "undefined" ? null : test;
 
-    client.setGivenAnswer(user.id, safeTest, questionId, answer._id, result);
+    try {
+      // 2. Antwort direkt im Hintergrund an den Server senden
+      if (client.setGivenAnswer) {
+        await client.setGivenAnswer(
+          user.id,
+          safeTest,
+          questionId,
+          answer._id,
+          result,
+        );
+      } else if (client.sendGivenAnswer) {
+        // Falls deine Methode im Client 'sendGivenAnswer' heißt:
+        await client.sendGivenAnswer(
+          user.id,
+          safeTest,
+          questionId,
+          answer._id,
+          result,
+        );
+      }
+    } catch (err) {
+      console.error("Fehler beim Senden der Antwort:", err);
+    }
+
+    // 3. Dem Parent-Screen Bescheid geben, damit checked auf true gesetzt wird
+    // (Aktiviert sofort die Farben und zeigt den "Next"-Button)
+    onSelectAnswer();
   };
 
   return (
@@ -49,14 +77,14 @@ export default function Answers({
           ? colors.answerBackground
           : dark
             ? "#1e1e1e"
-            : "#f5f5f5"; // 👈 kein hartes Weiß mehr
+            : "#f5f5f5";
 
-        // ✅ Zustand nach Auswahl
+        // ✅ Zustand nach Auswahl (Rot/Grün Einfärbung)
         if (checked) {
           if (isCorrect) {
-            backgroundColor = dark ? "#1b5e20" : "#d4edda"; // grün
+            backgroundColor = dark ? "#1b5e20" : "#d4edda"; // grün bei korrekter Antwort
           } else if (isSelected) {
-            backgroundColor = dark ? "#7f1d1d" : "#f8d7da"; // rot
+            backgroundColor = dark ? "#7f1d1d" : "#f8d7da"; // rot bei falscher Auswahl
           }
         }
 
@@ -100,5 +128,6 @@ const styles = StyleSheet.create({
   },
   answerText: {
     marginLeft: 8,
+    flex: 1, // Verhindert Text-Overflow bei sehr langen Antworttexten
   },
 });

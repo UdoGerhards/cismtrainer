@@ -1,6 +1,5 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-// Pressable hinzugefügt, um saubere Checkboxen zu bauen
 import {
   ActivityIndicator,
   Button,
@@ -21,41 +20,33 @@ import { HeaderLogo } from "@/components/headerLogo";
 
 import client from "@/scripts/client";
 
-// 🔴 DAS 'async' WURDE HIER ENTFERNT:
-export default function ConfigScreen() {
+// 🌟 Name sauber von ConfigScreen zu TestConfigScreen geändert
+export default function TestConfigScreen() {
   const { colors } = useTheme(); // ✅ THEME
 
   const [title, setTitle] = useState("");
   const [questionCount, setQuestionCount] = useState("");
   const [timeMinutes, setTimeMinutes] = useState("");
 
-  // States für die CISM-Domains
   const [domains, setDomains] = useState([]);
-  const [selectedDomains, setSelectedDomains] = useState([]); // Speichert ausgewählte Domain-IDs
+  const [selectedDomains, setSelectedDomains] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // 1. Zwingt die Textfelder beim Laden der Seite dazu, absolut leer zu sein
     setTitle("");
     setQuestionCount("");
     setTimeMinutes("");
   }, []);
 
   useEffect(() => {
-    // 2. Erstelle eine asynchrone Funktion innerhalb des useEffect
     const loadDomains = async () => {
       try {
         setIsLoading(true);
-        // 3. Hier wird deine Methode aufgerufen
         const data = await client.fetchDomains();
-
         const fetchedDomains = data || [];
-        // 4. Daten im State speichern
         setDomains(fetchedDomains);
 
-        // 🌟 ALLE DOMAINS VORAUSWÄHLEN:
-        // Falls deine API Objekte nutzt, hier 'd.id' o.ä. verwenden. Da im JSX 'domain' direkt als ID genutzt wird, extrahieren wir das hier genauso.
         const allDomainIds = fetchedDomains.map((d) => d.id || d._id || d);
         setSelectedDomains(allDomainIds);
       } catch (err) {
@@ -69,7 +60,6 @@ export default function ConfigScreen() {
     loadDomains();
   }, []);
 
-  // Handler für das Auswählen/Abwählen der Checkboxen
   const toggleDomain = (domainId) => {
     if (selectedDomains.includes(domainId)) {
       setSelectedDomains(selectedDomains.filter((id) => id !== domainId));
@@ -78,7 +68,6 @@ export default function ConfigScreen() {
     }
   };
 
-  // Validierung: Felder ausgefüllt UND mindestens eine Domain ausgewählt
   const isFormValid =
     title.trim().length > 0 &&
     Number(questionCount) > 0 &&
@@ -98,7 +87,7 @@ export default function ConfigScreen() {
         title: safeTitle,
         questionCount: safeQuestionCount.toString(),
         timeMinutes: safeTimeMinutes.toString(),
-        domains: selectedDomains.join(","), // Übergibt IDs z.B. als "1,2" an die nächste Seite
+        domains: selectedDomains.join(","),
         ts: Date.now(),
       },
     });
@@ -180,7 +169,6 @@ export default function ConfigScreen() {
             ]}
           />
 
-          {/* --- CISM-DOMAINS ALS CHECKBOXEN --- */}
           <ThemedText style={[styles.label, { marginTop: 8 }]}>
             CISM-Domains:
           </ThemedText>
@@ -196,7 +184,6 @@ export default function ConfigScreen() {
           {!isLoading && !error && (
             <View style={styles.checkboxContainer}>
               {domains.map((domain) => {
-                // Bestimme die ID und den Namen (falls es Objekte oder Strings sind)
                 const domainId = domain.id || domain._id || domain;
                 const domainName = domain.name || domain.title || domain;
 
@@ -233,7 +220,6 @@ export default function ConfigScreen() {
               })}
             </View>
           )}
-          {/* ---------------------------------------- */}
 
           <ThemedView style={styles.fixToText}>
             <Button

@@ -26,7 +26,6 @@ export default function TestScreen() {
   const questionCount = Number(params.questionCount);
   const timeMinutes = Number(params.timeMinutes);
 
-  // Rohdaten der Domains als String sichern ("1,2,3" oder undefined)
   const rawDomains = params.domains;
 
   const [testId, setTestId] = useState<string | null>(null);
@@ -36,6 +35,8 @@ export default function TestScreen() {
     null,
   );
   const [questionsFetched, setQuestionsFetched] = useState(0);
+
+  // Steuert das Einfärben und die Sichtbarkeit des Next-Buttons
   const [checked, setChecked] = useState(false);
 
   const [timeLeft, setTimeLeft] = useState(timeMinutes * 60);
@@ -45,18 +46,15 @@ export default function TestScreen() {
   useEffect(() => {
     const initTest = async () => {
       try {
-        // 1. Domains hier lokal in ein Array konvertieren
         const domainArray = rawDomains ? String(rawDomains).split(",") : [];
 
         console.debug(domainArray);
 
-        // 2. Ausgewählte Domains via client.setDomains an den Server schicken, bevor der Test startet
         if (client.setDomains && domainArray.length > 0) {
           await client.setDomains(domainArray);
           console.log("Domains an Server übermittelt:", domainArray);
         }
 
-        // 3. Test erstellen und erste Frage holen
         const result = await client.createTest(title);
         const newTestId = result._id;
 
@@ -76,7 +74,7 @@ export default function TestScreen() {
     };
 
     initTest();
-  }, [rawDomains, title]); // Reagiert sauber, falls sich Parameter ändern
+  }, [rawDomains, title]);
 
   useEffect(() => {
     if (!timeMinutes) return;
@@ -109,12 +107,15 @@ export default function TestScreen() {
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  const handleOk = async () => {
+  // 🌟 NEU: Diese Funktion wird aufgerufen, sobald in Answers geklickt wird
+  const handleAnswerSelected = async () => {
     try {
+      // 1. Erst die Antwort an die Datenbank senden (wie im alten OK-Button)
       await client.sendGivenAnswer();
+      // 2. Danach das UI rot/grün einfärben und den Next-Button zeigen
       setChecked(true);
     } catch (err) {
-      console.error(err);
+      console.error("Fehler beim Speichern der Antwort:", err);
     }
   };
 
@@ -122,7 +123,7 @@ export default function TestScreen() {
     if (!currentQuestion) return;
 
     const nextQueue = [...queue];
-    const currentItem = nextQueue.shift();
+    const currentItem = nextQueue.shift(); // Aktuelle Frage entfernen
 
     // 1. Neue Frage vom Server nachladen?
     if (
@@ -131,7 +132,7 @@ export default function TestScreen() {
     ) {
       try {
         const result = await client.fetchQuestion(true);
-        const data = result[0]; // ✅ Korrektur: Array entpacken
+        const data = result[0];
 
         if (data) {
           nextQueue.push(data);
@@ -158,9 +159,10 @@ export default function TestScreen() {
       return;
     }
 
+    // 4. States für die nächste Frage setzen
     setQueue(nextQueue);
     setCurrentQuestion(nextQueue[0]);
-    setChecked(false);
+    setChecked(false); // Setzt den Zustand für die neue Frage zurück (entfärbt das UI)
   };
 
   if (!currentQuestion || !testId) {
@@ -175,7 +177,6 @@ export default function TestScreen() {
 
   const isLastQuestion =
     questionsFetched === questionCount && queue.length === 1;
-  const nextDisabled = isLastQuestion && !checked;
 
   return (
     <View style={{ flex: 1 }}>
@@ -236,24 +237,22 @@ export default function TestScreen() {
             checked={checked}
             test={testId}
             user={user}
+            // 🌟 Verweist nun auf die obige Speicher-Logik
+            onAnswerSelected={handleAnswerSelected}
           />
         </ThemedView>
 
         <ThemedView style={styles.fixToText}>
-          {!checked && (
+          <View style={{ flex: 1 }} />
+
+          {/* Der Button erscheint sofort, sobald eine Antwort ausgewählt wurde */}
+          {checked && (
             <Button
-              title="OK"
-              onPress={handleOk}
-              disabled={checked}
+              title={isLastQuestion ? "Test beenden" : "Next"}
+              onPress={handleNext}
               color={colors.primary}
             />
           )}
-          <Button
-            title="Next"
-            onPress={handleNext}
-            disabled={nextDisabled}
-            color={colors.primary}
-          />
         </ThemedView>
       </ParallaxScrollView>
       <Footer />
@@ -289,12 +288,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flex: 1,
-  },
-  reactLogo: {
-    height: 163,
-    width: 408,
-    marginTop: 40,
-    marginLeft: 30,
   },
   fixToText: {
     flexDirection: "row",

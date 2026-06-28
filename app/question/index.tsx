@@ -21,7 +21,11 @@ import { HeaderLogo } from "@/components/headerLogo";
 
 LogBox.ignoreLogs(["props.pointerEvents is deprecated"]);
 
-export default function HomeScreen() {
+const PERM_KI_USE_ALLOWED = 0b010000;
+const PERM_ADMIN = 0b111111;
+
+// 🌟 Name von HomeScreen zu RandomQuestionScreen geändert
+export default function RandomQuestionScreen() {
   const { user, loading: authLoading } = useAuth();
   const { colors } = useTheme();
 
@@ -32,25 +36,22 @@ export default function HomeScreen() {
 
   const [loading, setLoading] = useState(true);
   const [checked, setChecked] = useState(false);
-
-  const [nextDisabled, setNextDisabled] = useState(true);
-  const [okDisabled, setOkDisabled] = useState(false);
-  const [explainDisabled, setExplainDisabled] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const [explanations, setExplanations] = useState<Record<string, string>>({});
   const [loadingExplanation, setLoadingExplanation] = useState<string | null>(
     null,
   );
-  const [expanded, setExpanded] = useState(false);
 
   const questionRef = useRef(null);
 
+  const userRole = user?.role ? Number(user.role) : 0;
+  const isKiAllowed = (userRole & PERM_KI_USE_ALLOWED) === PERM_KI_USE_ALLOWED;
+  const isAdmin = (userRole & PERM_ADMIN) === PERM_ADMIN;
+  const showExplainButton = isKiAllowed || isAdmin;
+
   const loadNextQuestion = () => {
     setLoading(true);
-
-    setNextDisabled(true);
-    setOkDisabled(false);
-    setExplainDisabled(true);
     setExpanded(false);
 
     client
@@ -70,6 +71,42 @@ export default function HomeScreen() {
     loadNextQuestion();
   }, []);
 
+  const handleAnswerSelected = async () => {
+    try {
+      await client.sendGivenAnswer();
+      setChecked(true);
+    } catch (err) {
+      console.error("Fehler beim Speichern der Antwort:", err);
+    }
+  };
+
+  const handleExplain = async () => {
+    if (!currentQuestionId) return;
+
+    setExpanded(true);
+
+    if (explanations[currentQuestionId]) return;
+
+    try {
+      setLoadingExplanation(currentQuestionId);
+
+      const res = await client.getExplanation(currentQuestionId);
+
+      setExplanations((prev) => ({
+        ...prev,
+        [currentQuestionId]: res || "Keine Erklärung vorhanden",
+      }));
+    } catch (e) {
+      console.error(e);
+      setExplanations((prev) => ({
+        ...prev,
+        [currentQuestionId]: "Fehler beim Laden der Erklärung",
+      }));
+    } finally {
+      setLoadingExplanation(null);
+    }
+  };
+
   if (authLoading) {
     return (
       <ThemedView style={styles.stepContainer}>
@@ -78,15 +115,13 @@ export default function HomeScreen() {
     );
   }
 
-  if (loading) {
+  if (loading || !questions) {
     return (
       <ThemedView style={styles.stepContainer}>
         <ThemedText>Lade Fragen ...</ThemedText>
       </ThemedView>
     );
   }
-
-  const isExpanded = expanded;
 
   return (
     <>
@@ -106,79 +141,43 @@ export default function HomeScreen() {
           headerImage={<HeaderLogo />}
         >
           <Question
+            key={currentQuestionId}
             ref={questionRef}
             question={questions}
             checked={checked}
             user={user}
+            onAnswerSelected={handleAnswerSelected}
           />
 
-          {/* BUTTONS */}
           <ThemedView style={styles.fixToText}>
-            {!okDisabled && (
-              <Button
-                title="OK"
-                color={colors.primary}
-                onPress={() => {
-                  client.sendGivenAnswer();
-                  setChecked(true);
-                  setOkDisabled(true);
-                  setNextDisabled(false);
-                  setExplainDisabled(false);
-                }}
-              />
-            )}
-
-            {!explainDisabled && (
+            {checked && !expanded && showExplainButton && (
               <Button
                 title="Explain"
                 color={colors.primary}
-                onPress={async () => {
-                  if (!currentQuestionId) return;
-
-                  setExplainDisabled(true);
-                  setExpanded(true);
-
-                  if (explanations[currentQuestionId]) return;
-
-                  try {
-                    setLoadingExplanation(currentQuestionId);
-
-                    const res = await client.getExplanation(currentQuestionId);
-
-                    setExplanations((prev) => ({
-                      ...prev,
-                      [currentQuestionId]: res || "Keine Erklärung vorhanden",
-                    }));
-                  } catch (e) {
-                    console.error(e);
-                    setExplanations((prev) => ({
-                      ...prev,
-                      [currentQuestionId]: "Fehler beim Laden der Erklärung",
-                    }));
-                  } finally {
-                    setLoadingExplanation(null);
-                  }
-                }}
+                onPress={handleExplain}
               />
             )}
 
-            {!nextDisabled && (
+            <View style={{ flex: 1 }} />
+
+            {checked && (
               <Button
                 title="Next"
                 color={colors.primary}
                 onPress={loadNextQuestion}
-                disabled={nextDisabled}
               />
             )}
           </ThemedView>
 
-          <ExplanationBox
-            isExpanded={isExpanded}
-            loadingExplanation={loadingExplanation}
-            itemId={currentQuestionId}
-            explanations={explanations}
-            styles={styles}
-          />
+          {showExplainButton && (
+            <ExplanationBox
+              isExpanded={expanded}
+              loadingExplanation={loadingExplanation}
+              itemId={currentQuestionId}
+              explanations={explanations}
+              styles={styles}
+            />
+          )}
         </ParallaxScrollView>
         <Footer />
       </View>
@@ -195,9 +194,14 @@ const styles = StyleSheet.create({
   stepContainer: {
     gap: 8,
     marginBottom: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
   },
   fixToText: {
     flexDirection: "row",
     justifyContent: "space-between",
+    paddingHorizontal: 16,
+    marginTop: 10,
   },
 });
