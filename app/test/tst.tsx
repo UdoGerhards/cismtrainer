@@ -26,6 +26,9 @@ export default function TestScreen() {
   const questionCount = Number(params.questionCount);
   const timeMinutes = Number(params.timeMinutes);
 
+  // Rohdaten der Domains als String sichern ("1,2,3" oder undefined)
+  const rawDomains = params.domains;
+
   const [testId, setTestId] = useState<string | null>(null);
 
   const [queue, setQueue] = useState<QuestionItem[]>([]);
@@ -40,24 +43,26 @@ export default function TestScreen() {
   const questionRef = useRef(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      // Einzigartiger Parameter verhindert Browser-Caching der API-Antwort
-      const response = await fetch(`/api/data?_=${new Date().getTime()}`);
-      const data = await response.json();
-      // ... State setzen
-    };
-    fetchData();
-  }, []);
-
-  useEffect(() => {
     const initTest = async () => {
       try {
+        // 1. Domains hier lokal in ein Array konvertieren
+        const domainArray = rawDomains ? String(rawDomains).split(",") : [];
+
+        console.debug(domainArray);
+
+        // 2. Ausgewählte Domains via client.setDomains an den Server schicken, bevor der Test startet
+        if (client.setDomains && domainArray.length > 0) {
+          await client.setDomains(domainArray);
+          console.log("Domains an Server übermittelt:", domainArray);
+        }
+
+        // 3. Test erstellen und erste Frage holen
         const result = await client.createTest(title);
         const newTestId = result._id;
 
         setTestId(newTestId);
 
-        const qstions = await client.fetchQuestion();
+        const qstions = await client.fetchQuestion(true);
         const data = qstions[0];
 
         if (!data) return;
@@ -66,12 +71,12 @@ export default function TestScreen() {
         setCurrentQuestion(data);
         setQuestionsFetched(1);
       } catch (err) {
-        console.error(err);
+        console.error("Fehler bei der Test-Initialisierung:", err);
       }
     };
 
     initTest();
-  }, []);
+  }, [rawDomains, title]); // Reagiert sauber, falls sich Parameter ändern
 
   useEffect(() => {
     if (!timeMinutes) return;
@@ -96,7 +101,7 @@ export default function TestScreen() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [testId]);
+  }, [testId, timeMinutes]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -125,7 +130,7 @@ export default function TestScreen() {
       (nextQueue.length === 0 || !checked)
     ) {
       try {
-        const result = await client.fetchQuestion();
+        const result = await client.fetchQuestion(true);
         const data = result[0]; // ✅ Korrektur: Array entpacken
 
         if (data) {
@@ -225,6 +230,7 @@ export default function TestScreen() {
           ]}
         >
           <Question
+            key={currentQuestion._id}
             ref={questionRef}
             question={currentQuestion}
             checked={checked}

@@ -248,9 +248,10 @@ class Client extends Base {
   ==========================================
   */
 
-  async fetchQuestion() {
+  async fetchQuestion(isTest = false) {
     return this.request("/question", {
       method: "POST",
+      body: JSON.stringify({ isTest }),
     });
   }
 
@@ -430,6 +431,51 @@ class Client extends Base {
       deletedTests: data.deletedTests,
       deletedAnswers: data.deletedAnswers,
     };
+  }
+
+  async fetchDomains() {
+    const url = `/get/domains`;
+
+    try {
+      const data = await this.request(url, {
+        method: "GET",
+      });
+
+      // Gib die Daten an den Aufrufer zurück
+      return data;
+    } catch (error) {
+      console.error("Fehler beim Laden der Domains:", error);
+      throw error; // Fehler weiterwerfen, falls das FE darauf reagieren muss
+    }
+  }
+
+  async setDomains(domains) {
+    const url = `/set/domains`; // Hinweis: Falls deine API unter /api/... läuft, eventuell zu `/api/set/domains` ändern
+
+    try {
+      if (!Array.isArray(domains)) {
+        throw new Error("Domains müssen als Array übergeben werden.");
+      }
+
+      if (domains.length === 0) {
+        throw new Error("Die Domain-Liste darf nicht leer sein.");
+      }
+
+      // Hier passiert die Magie: POST-Request mit den Daten im Body
+      const response = await this.request(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // Wir packen die Domains so ein, wie es der Server (req.body.domains) erwartet:
+        body: JSON.stringify({ domains }),
+      });
+
+      return response; // Gibt { ok: true } zurück, wenn alles geklappt hat
+    } catch (error) {
+      console.error("Fehler beim Speichern der Domains:", error);
+      throw error;
+    }
   }
 }
 

@@ -1,6 +1,14 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Button, StyleSheet, TextInput, View } from "react-native";
+// Pressable hinzugefügt, um saubere Checkboxen zu bauen
+import {
+  ActivityIndicator,
+  Button,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from "react-native";
 
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
@@ -11,6 +19,9 @@ import { useTheme } from "@react-navigation/native";
 
 import { HeaderLogo } from "@/components/headerLogo";
 
+import client from "@/scripts/client";
+
+// 🔴 DAS 'async' WURDE HIER ENTFERNT:
 export default function ConfigScreen() {
   const { colors } = useTheme(); // ✅ THEME
 
@@ -18,27 +29,61 @@ export default function ConfigScreen() {
   const [questionCount, setQuestionCount] = useState("");
   const [timeMinutes, setTimeMinutes] = useState("");
 
+  // States für die CISM-Domains
+  const [domains, setDomains] = useState([]);
+  const [selectedDomains, setSelectedDomains] = useState([]); // Speichert ausgewählte Domain-IDs
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
-    // 1. Zwingt die Felder beim Laden der Seite dazu, absolut leer zu sein (löscht Chromes Vorbefüllung)
+    // 1. Zwingt die Textfelder beim Laden der Seite dazu, absolut leer zu sein
     setTitle("");
     setQuestionCount("");
     setTimeMinutes("");
-
-    const fetchData = async () => {
-      try {
-        const response = await fetch(`/api/data?_=${new Date().getTime()}`);
-        await response.json();
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchData();
   }, []);
 
+  useEffect(() => {
+    // 2. Erstelle eine asynchrone Funktion innerhalb des useEffect
+    const loadDomains = async () => {
+      try {
+        setIsLoading(true);
+        // 3. Hier wird deine Methode aufgerufen
+        const data = await client.fetchDomains();
+
+        const fetchedDomains = data || [];
+        // 4. Daten im State speichern
+        setDomains(fetchedDomains);
+
+        // 🌟 ALLE DOMAINS VORAUSWÄHLEN:
+        // Falls deine API Objekte nutzt, hier 'd.id' o.ä. verwenden. Da im JSX 'domain' direkt als ID genutzt wird, extrahieren wir das hier genauso.
+        const allDomainIds = fetchedDomains.map((d) => d.id || d._id || d);
+        setSelectedDomains(allDomainIds);
+      } catch (err) {
+        setError("Domains konnten nicht geladen werden.");
+        console.error("Fehler im Frontend:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDomains();
+  }, []);
+
+  // Handler für das Auswählen/Abwählen der Checkboxen
+  const toggleDomain = (domainId) => {
+    if (selectedDomains.includes(domainId)) {
+      setSelectedDomains(selectedDomains.filter((id) => id !== domainId));
+    } else {
+      setSelectedDomains([...selectedDomains, domainId]);
+    }
+  };
+
+  // Validierung: Felder ausgefüllt UND mindestens eine Domain ausgewählt
   const isFormValid =
     title.trim().length > 0 &&
     Number(questionCount) > 0 &&
-    Number(timeMinutes) > 0;
+    Number(timeMinutes) > 0 &&
+    selectedDomains.length > 0;
 
   const startTest = () => {
     if (!isFormValid) return;
@@ -53,6 +98,7 @@ export default function ConfigScreen() {
         title: safeTitle,
         questionCount: safeQuestionCount.toString(),
         timeMinutes: safeTimeMinutes.toString(),
+        domains: selectedDomains.join(","), // Übergibt IDs z.B. als "1,2" an die nächste Seite
         ts: Date.now(),
       },
     });
@@ -81,7 +127,7 @@ export default function ConfigScreen() {
             onChangeText={setTitle}
             placeholder="Title of your test"
             placeholderTextColor={colors.border}
-            autoComplete="off" // 👈 Verhindert Autofill im Browser
+            autoComplete="off"
             style={[
               styles.input,
               {
@@ -101,7 +147,7 @@ export default function ConfigScreen() {
             keyboardType="numeric"
             placeholder="For e.g. 20, 30, ..."
             placeholderTextColor={colors.border}
-            autoComplete="one-time-code" // 👈 Trickst Chromes numerisches Autofill aus
+            autoComplete="one-time-code"
             style={[
               styles.input,
               {
@@ -121,7 +167,7 @@ export default function ConfigScreen() {
             keyboardType="numeric"
             placeholder="For e.g. 60, 120, ..."
             placeholderTextColor={colors.border}
-            autoComplete="one-time-code" // 👈 Trickst Chromes numerisches Autofill aus
+            autoComplete="one-time-code"
             style={[
               styles.input,
               {
@@ -133,6 +179,61 @@ export default function ConfigScreen() {
               },
             ]}
           />
+
+          {/* --- CISM-DOMAINS ALS CHECKBOXEN --- */}
+          <ThemedText style={[styles.label, { marginTop: 8 }]}>
+            CISM-Domains:
+          </ThemedText>
+
+          {isLoading && (
+            <ActivityIndicator
+              color={colors.primary}
+              style={{ alignSelf: "flex-start" }}
+            />
+          )}
+          {error && <ThemedText style={{ color: "red" }}>{error}</ThemedText>}
+
+          {!isLoading && !error && (
+            <View style={styles.checkboxContainer}>
+              {domains.map((domain) => {
+                // Bestimme die ID und den Namen (falls es Objekte oder Strings sind)
+                const domainId = domain.id || domain._id || domain;
+                const domainName = domain.name || domain.title || domain;
+
+                const isChecked = selectedDomains.includes(domainId);
+
+                return (
+                  <Pressable
+                    key={
+                      domainId ? domainId.toString() : Math.random().toString()
+                    }
+                    style={styles.checkboxRow}
+                    onPress={() => toggleDomain(domainId)}
+                  >
+                    <View
+                      style={[
+                        styles.checkbox,
+                        {
+                          borderColor: colors.border,
+                          backgroundColor: isChecked
+                            ? colors.primary
+                            : "transparent",
+                        },
+                      ]}
+                    >
+                      {isChecked && (
+                        <ThemedText style={styles.checkmark}>✓</ThemedText>
+                      )}
+                    </View>
+                    <ThemedText style={styles.checkboxLabel}>
+                      {domainName}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+          {/* ---------------------------------------- */}
 
           <ThemedView style={styles.fixToText}>
             <Button
@@ -157,14 +258,42 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     marginBottom: 4,
+    fontWeight: "600",
   },
   input: {
     borderWidth: 1,
     padding: 10,
     borderRadius: 8,
   },
+  checkboxContainer: {
+    gap: 12,
+    marginBottom: 8,
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderWidth: 2,
+    borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkmark: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+    lineHeight: 16,
+  },
+  checkboxLabel: {
+    fontSize: 15,
+  },
   fixToText: {
     flexDirection: "row",
     justifyContent: "space-between",
+    marginTop: 8,
   },
 });
