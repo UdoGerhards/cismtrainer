@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@react-native-vector-icons/ionicons/static";
 import { useTheme } from "@react-navigation/native";
 import { useState } from "react";
 import { StyleSheet, TextInput, TextInputProps, View } from "react-native";

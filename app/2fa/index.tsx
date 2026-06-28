@@ -13,8 +13,7 @@ import Footer from "@/components/Footer";
 import { useTheme } from "@react-navigation/native";
 
 import { HeaderLogo } from "@/components/headerLogo";
-// Hinweis: Wenn du Expo Vector Icons nutzt, kannst du hier ein Icon importieren (z.B. Ionicons)
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@react-native-vector-icons/ionicons/static";
 
 const MAX_ATTEMPTS = 5;
 const COOLDOWN_SECONDS = 30;

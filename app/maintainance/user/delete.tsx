@@ -17,7 +17,7 @@ import OtpInput, { OtpInputRef } from "@/components/ui/OTPInput";
 import client from "@/scripts/client";
 
 import { HeaderLogo } from "@/components/headerLogo";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@react-native-vector-icons/ionicons/static";
 
 // Definition der Rechte basierend auf der Bitmaske
 const PERMISSIONS = [

@@ -4,7 +4,7 @@ import { Button, StyleSheet, TextInput, View } from "react-native";
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@react-native-vector-icons/ionicons/static";
 
 import { useAuth } from "@/context/AuthContext";
 import client from "@/scripts/client";
