@@ -8,11 +8,14 @@ import Feather from "react-native-vector-icons/Feather";
 
 export default function TestErgebnisScreen() {
   const { colors } = useTheme();
-  const { testId, title } = useLocalSearchParams();
+  const { testId } = useLocalSearchParams();
   const router = useRouter();
 
   // Erstellen der Referenz, um auf die Methoden der TstEvaluation Komponente zuzugreifen
   const tstRef = useRef<any>(null);
+
+  console.log(testId);
+  console.log("HIER DU ARSCH");
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
