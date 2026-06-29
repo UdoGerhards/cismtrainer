@@ -8,14 +8,13 @@ import Feather from "react-native-vector-icons/Feather";
 
 export default function TestErgebnisScreen() {
   const { colors } = useTheme();
-  const { testId } = useLocalSearchParams();
+  const { id } = useLocalSearchParams();
   const router = useRouter();
 
   // Erstellen der Referenz, um auf die Methoden der TstEvaluation Komponente zuzugreifen
   const tstRef = useRef<any>(null);
 
-  console.log(testId);
-  console.log("HIER DU ARSCH");
+  console.log("TestErgebnisScreen", id);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -34,7 +33,7 @@ export default function TestErgebnisScreen() {
       </View>
 
       {/* Übergeben der Referenz an die Kind-Komponente */}
-      <TstEvaluation ref={tstRef} testId={testId as string} />
+      <TstEvaluation ref={tstRef} testId={id as string} />
     </View>
   );
 }

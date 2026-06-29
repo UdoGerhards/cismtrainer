@@ -187,6 +187,8 @@ class Client extends Base {
   async me(token) {
     const data = await this.request("/me", { method: "GET" }, token);
 
+    console.log(token);
+
     if (!data?.user) {
       throw new Error("Invalid /me response");
     }
@@ -280,6 +282,7 @@ class Client extends Base {
   }
 
   async calculateTestResults(id) {
+    console.log("calculateTestResults");
     return this.request("/test/result", {
       method: "POST",
       body: JSON.stringify({ id }),
@@ -294,6 +297,7 @@ class Client extends Base {
   }
 
   async getTestEvaluation(id) {
+    console.log("getTestEvaluatio");
     return this.request("/test/evaluation", {
       method: "POST",
       body: JSON.stringify({ id }),

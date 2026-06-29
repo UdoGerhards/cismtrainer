@@ -133,7 +133,7 @@ export default function Performance() {
 
     // Übergibt id und title via URL-Query (?id=...&title=...) an app/testReport.tsx
     router.push({
-      pathname: "/test/ergebnis",
+      pathname: "/testReport",
       params: { id: testId },
     });
   };
