@@ -1,10 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, StyleSheet, TextInput, View } from "react-native";
+import {
+  Button,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Feather from "react-native-vector-icons/Feather";
 
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import Ionicons from "@react-native-vector-icons/ionicons/static";
 
 import { useAuth } from "@/context/AuthContext";
 import client from "@/scripts/client";
@@ -17,7 +23,6 @@ import { HeaderLogo } from "@/components/headerLogo";
 
 export default function ChangePasswordScreen() {
   const { colors } = useTheme();
-
   const { refreshUser } = useAuth();
   const [loading, setLoading] = useState(false);
 
@@ -25,13 +30,11 @@ export default function ChangePasswordScreen() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const router = useRouter();
   const passwordRef = useRef<TextInput>(null);
-
   const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const [showPassword, setShowPassword] = useState(false);
 
   const isValid = password.trim().length >= 8 && password === confirm;
 
@@ -42,13 +45,9 @@ export default function ChangePasswordScreen() {
   };
 
   const showError = (type: keyof typeof ERROR_MESSAGES) => {
-    if (errorTimeoutRef.current) {
-      clearTimeout(errorTimeoutRef.current);
-    }
-
+    if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
     setSuccess(false);
     setError(ERROR_MESSAGES[type]);
-
     errorTimeoutRef.current = setTimeout(() => {
       setError("");
       errorTimeoutRef.current = null;
@@ -57,7 +56,6 @@ export default function ChangePasswordScreen() {
 
   const handleChangePassword = async () => {
     if (!isValid || loading) return;
-
     setLoading(true);
     setError("");
     setSuccess(false);
@@ -65,58 +63,42 @@ export default function ChangePasswordScreen() {
     try {
       const res = await client.request("/user/change-password", {
         method: "POST",
-        body: JSON.stringify({
-          newPassword: password,
-        }),
+        body: JSON.stringify({ newPassword: password }),
       });
 
       if (res?.success === true) {
         setSuccess(true);
-
         await refreshUser();
-
         setTimeout(() => {
           setLoading(false);
           router.replace("/performance");
         }, 1500);
       } else {
         showError("SERVER_ERROR");
-
         setPassword("");
         setConfirm("");
         passwordRef.current?.focus();
-
         setLoading(false);
       }
     } catch (e: any) {
-      const status = e?.status || e?.response?.status;
       const errorCode = e?.data?.error || e?.response?.data?.error;
-
-      if (status === 400) {
-        if (errorCode === "PASSWORD_SAME") {
-          showError("PASSWORD_SAME");
-        } else if (errorCode === "PASSWORD_WEAK") {
-          showError("PASSWORD_WEAK");
-        } else {
-          showError("SERVER_ERROR");
-        }
-      } else {
-        showError("SERVER_ERROR");
-      }
-
+      showError(
+        errorCode === "PASSWORD_SAME"
+          ? "PASSWORD_SAME"
+          : errorCode === "PASSWORD_WEAK"
+            ? "PASSWORD_WEAK"
+            : "SERVER_ERROR",
+      );
       setPassword("");
       setConfirm("");
       passwordRef.current?.focus();
-
       setLoading(false);
     }
   };
 
   useEffect(() => {
     return () => {
-      if (errorTimeoutRef.current) {
-        clearTimeout(errorTimeoutRef.current);
-      }
+      if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
     };
   }, []);
 
@@ -128,10 +110,7 @@ export default function ChangePasswordScreen() {
           backgroundColor: colors.background,
           flexGrow: 1,
         }}
-        headerBackgroundColor={{
-          light: colors.card,
-          dark: colors.card,
-        }}
+        headerBackgroundColor={{ light: colors.card, dark: colors.card }}
         headerImage={<HeaderLogo />}
       >
         <ThemedView
@@ -141,7 +120,6 @@ export default function ChangePasswordScreen() {
 
           {/* PASSWORD */}
           <ThemedText style={styles.label}>Neues Passwort:</ThemedText>
-
           <View style={styles.inputWrapper}>
             <TextInput
               ref={passwordRef}
@@ -162,19 +140,20 @@ export default function ChangePasswordScreen() {
                 },
               ]}
             />
-
-            <Ionicons
-              name={showPassword ? "eye-off" : "eye"}
-              size={22}
-              color={colors.border}
-              style={styles.icon}
-              onPress={() => setShowPassword((prev) => !prev)}
-            />
+            <TouchableOpacity
+              style={styles.iconContainer}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Feather
+                name={showPassword ? "eye-off" : "eye"}
+                size={20}
+                color="#cccccc"
+              />
+            </TouchableOpacity>
           </View>
 
           {/* CONFIRM */}
           <ThemedText style={styles.label}>Passwort bestätigen:</ThemedText>
-
           <View style={styles.inputWrapper}>
             <TextInput
               value={confirm}
@@ -194,25 +173,26 @@ export default function ChangePasswordScreen() {
                 },
               ]}
             />
-
-            <Ionicons
-              name={showPassword ? "eye-off" : "eye"}
-              size={22}
-              color={colors.border}
-              style={styles.icon}
-              onPress={() => setShowPassword((prev) => !prev)}
-            />
+            <TouchableOpacity
+              style={styles.iconContainer}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Feather
+                name={showPassword ? "eye-off" : "eye"}
+                size={20}
+                color="#cccccc"
+              />
+            </TouchableOpacity>
           </View>
 
-          {/* VALIDATION */}
+          {/* FEEDBACK */}
           {!isValid && password.length > 0 && (
             <ThemedText
               style={[styles.error, { color: colors.errorBackground }]}
             >
-              Passwort ungültig oder stimmt nicht überein (min. 8 Zeichen)
+              Passwort ungültig (min. 8 Zeichen)
             </ThemedText>
           )}
-
           {error && (
             <ThemedText
               style={[styles.error, { color: colors.errorBackground }]}
@@ -220,7 +200,6 @@ export default function ChangePasswordScreen() {
               {error}
             </ThemedText>
           )}
-
           {success && (
             <ThemedText
               style={[styles.success, { color: colors.successBackground }]}
@@ -245,50 +224,18 @@ export default function ChangePasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    gap: 16,
-  },
-
-  title: {
-    fontSize: 22,
-    marginBottom: 10,
-  },
-
-  label: {
-    fontSize: 16,
-  },
-
-  button: {
-    marginTop: 10,
-    alignItems: "flex-start",
-  },
-
-  error: {
-    fontSize: 14,
-  },
-
-  success: {
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-
+  container: { padding: 20, gap: 16 },
+  title: { fontSize: 22, marginBottom: 10 },
+  label: { fontSize: 16 },
+  button: { marginTop: 10, alignItems: "flex-start" },
+  error: { fontSize: 14 },
+  success: { fontWeight: "bold", fontSize: 14 },
   inputWrapper: {
     position: "relative",
     justifyContent: "center",
     width: "100%",
     maxWidth: 400,
   },
-
-  input: {
-    borderWidth: 1,
-    padding: 12,
-    paddingRight: 45, // 🔥 Platz für Icon
-    borderRadius: 8,
-  },
-
-  icon: {
-    position: "absolute",
-    right: 12,
-  },
+  input: { borderWidth: 1, padding: 12, paddingRight: 45, borderRadius: 8 },
+  iconContainer: { position: "absolute", right: 12, padding: 5 },
 });

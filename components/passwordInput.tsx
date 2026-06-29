@@ -1,7 +1,13 @@
-import Ionicons from "@react-native-vector-icons/ionicons/static";
 import { useTheme } from "@react-navigation/native";
 import { useState } from "react";
-import { StyleSheet, TextInput, TextInputProps, View } from "react-native";
+import {
+  StyleSheet,
+  TextInput,
+  TextInputProps,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Feather from "react-native-vector-icons/Feather";
 
 type Props = TextInputProps & {
   value: string;
@@ -33,6 +39,10 @@ export default function PasswordInput({
         secureTextEntry={!showPassword}
         placeholder="Passwort"
         placeholderTextColor={colors.border}
+        autoCapitalize="none"
+        autoCorrect={false}
+        textContentType="password"
+        autoComplete="password"
         style={[
           styles.input,
           {
@@ -43,13 +53,17 @@ export default function PasswordInput({
         {...props}
       />
 
-      <Ionicons
-        name={showPassword ? "eye-off" : "eye"}
-        size={22}
-        color={colors.border}
-        style={styles.icon}
+      <TouchableOpacity
+        style={styles.iconContainer}
         onPress={() => setShowPassword((prev) => !prev)}
-      />
+        activeOpacity={0.7}
+      >
+        <Feather
+          name={showPassword ? "eye-off" : "eye"}
+          size={20}
+          color="#cccccc"
+        />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -59,20 +73,19 @@ const styles = StyleSheet.create({
     position: "relative",
     borderWidth: 1,
     borderRadius: 8,
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
     width: "100%",
     maxWidth: 400,
   },
-
   input: {
+    flex: 1,
     padding: 10,
     paddingRight: 40,
   },
-
-  icon: {
+  iconContainer: {
     position: "absolute",
     right: 10,
-    top: "50%",
-    transform: [{ translateY: -11 }],
+    padding: 5,
   },
 });

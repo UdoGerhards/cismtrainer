@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Feather from "react-native-vector-icons/Feather";
 
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
@@ -21,12 +22,11 @@ import Ionicons from "@react-native-vector-icons/ionicons/static";
 
 // Definition der Rechte basierend auf der Bitmaske
 const PERMISSIONS = [
-  //{ bit: 0b000001, label: "Basis" },
   { bit: 0b000010, label: "Kann Benutzer anlegen" },
   { bit: 0b000100, label: "Kann Benutzer löschen" },
   { bit: 0b001000, label: "Kann Tests löschen" },
   { bit: 0b010000, label: 'Kann KI benutzen ("Explain")' },
-  { bit: 0b100000, label: "Admin" }, // Ergänzung für das MSB des Admins (111111)
+  { bit: 0b100000, label: "Admin" },
 ];
 
 export default function UserManagementScreen() {
@@ -165,7 +165,6 @@ export default function UserManagementScreen() {
                   <TouchableOpacity
                     style={styles.backspaceButton}
                     onPress={() => otpRef.current?.clearLast()}
-                    activeOpacity={0.7}
                   >
                     <ThemedText
                       style={[styles.backspaceText, { color: colors.text }]}
@@ -176,29 +175,6 @@ export default function UserManagementScreen() {
                 )}
               </ThemedView>
             </ThemedView>
-
-            {error ? (
-              <ThemedText
-                style={{
-                  color: colors.errorBackground,
-                  textAlign: "center",
-                  marginTop: 10,
-                }}
-              >
-                {error}
-              </ThemedText>
-            ) : null}
-            {otpLoading ? (
-              <ThemedText
-                style={{
-                  textAlign: "center",
-                  marginTop: 10,
-                  color: colors.text,
-                }}
-              >
-                Prüfe Code...
-              </ThemedText>
-            ) : null}
           </ThemedView>
         </ParallaxScrollView>
         <Footer />
@@ -230,7 +206,6 @@ export default function UserManagementScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* USER LIST */}
           <FlatList
             data={filteredUsers}
             keyExtractor={(item) => item.id}
@@ -257,18 +232,15 @@ export default function UserManagementScreen() {
                     </ThemedText>
                   </View>
 
-                  {/* Checkboxen für die Rechte */}
                   <View style={styles.checkboxContainer}>
                     {PERMISSIONS.map((p) => {
                       const active = hasPermission(roleMask, p.bit);
                       return (
                         <View key={p.bit} style={styles.checkboxWrapper}>
-                          <Ionicons
-                            name={
-                              active ? "checkbox-outline" : "square-outline"
-                            }
+                          <Feather
+                            name={active ? "check-square" : "square"}
                             size={18}
-                            color={active ? "#000000" : colors.text + "40"}
+                            color={active ? colors.primary : colors.text + "40"}
                           />
                           <ThemedText style={styles.checkboxLabel}>
                             {p.label}
@@ -288,21 +260,6 @@ export default function UserManagementScreen() {
               );
             }}
           />
-
-          {error ? (
-            <ThemedText
-              style={{ color: colors.errorBackground, marginTop: 10 }}
-            >
-              {error}
-            </ThemedText>
-          ) : null}
-          {success ? (
-            <ThemedText
-              style={{ color: colors.successBackground, marginTop: 10 }}
-            >
-              {success}
-            </ThemedText>
-          ) : null}
         </ThemedView>
       </ParallaxScrollView>
       <Footer />
@@ -313,13 +270,11 @@ export default function UserManagementScreen() {
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 20,
-    marginHorizontal: 30, // 30px Margin links und rechts vom gesamten Content-Bereich
+    marginHorizontal: 30,
     gap: 12,
     marginBottom: 20,
   },
-  title: {
-    fontSize: 22,
-  },
+  title: { fontSize: 22 },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -328,11 +283,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     height: 44,
   },
-  searchInput: {
-    flex: 1,
-    height: "100%",
-    paddingVertical: 0,
-  },
+  searchInput: { flex: 1, height: "100%", paddingVertical: 0 },
   searchIconWrapper: {
     paddingLeft: 10,
     justifyContent: "center",
@@ -346,34 +297,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  userInfo: {
-    flex: 1, // Gibt der Info-Spalte flexiblen, aber begrenzten Raum
-  },
-  userTextName: {
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  userTextEmail: {
-    fontSize: 11,
-  },
+  userInfo: { flex: 1 },
+  userTextName: { fontWeight: "600", fontSize: 14 },
+  userTextEmail: { fontSize: 11 },
   checkboxContainer: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    alignItems: "flex-start", // Verhindert das Verzerren vertikal
-    flex: 3, // Gibt der Checkbox-Sektion mehr Platz, damit Texte ungestaucht bleiben
-    gap: 10, // Harmonischer Abstand zwischen den Checkbox-Blöcken
+    flex: 3,
+    gap: 10,
   },
-  checkboxWrapper: {
-    alignItems: "center",
-    minWidth: 55, // Erlaubt dem Text, natürlich in die Breite zu gehen statt gequetscht zu werden
-    maxWidth: 70,
-  },
+  checkboxWrapper: { alignItems: "center", minWidth: 55, maxWidth: 70, gap: 4 },
   checkboxLabel: {
     fontSize: 8,
     marginTop: 4,
     textAlign: "center",
-    color: "#333333",
-    lineHeight: 10, // Bietet sauberen Zeilenabstand beim Umbrechen des langen Textes
+    lineHeight: 10,
   },
   deleteButton: {
     backgroundColor: "red",
@@ -397,10 +335,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 8,
   },
-  backspaceText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
+  backspaceText: { fontSize: 14, fontWeight: "600" },
   otpWrapper: {
     width: "100%",
     maxWidth: 400,

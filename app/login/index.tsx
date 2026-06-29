@@ -21,7 +21,6 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
 
   const isFormValid = email.trim().length > 0 && password.trim().length > 0;
 
@@ -34,7 +33,6 @@ export default function LoginScreen() {
   const resetForm = () => {
     setEmail("");
     setPassword("");
-    setShowPassword(false);
     setError("");
   };
 
@@ -145,35 +143,15 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 16,
   },
-
   label: {
     fontSize: 16,
     marginBottom: 4,
   },
-
   input: {
     borderWidth: 1,
     padding: 10,
     borderRadius: 8,
   },
-
-  inputWrapper: {
-    position: "relative",
-    justifyContent: "center",
-  },
-
-  inputWithIcon: {
-    borderWidth: 1,
-    padding: 10,
-    paddingRight: 40,
-    borderRadius: 8,
-  },
-
-  icon: {
-    position: "absolute",
-    right: 10,
-  },
-
   fixToText: {
     flexDirection: "row",
     justifyContent: "space-between",

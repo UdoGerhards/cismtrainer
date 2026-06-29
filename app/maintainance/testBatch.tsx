@@ -1,4 +1,3 @@
-import Ionicons from "@react-native-vector-icons/ionicons/static";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -8,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Feather from "react-native-vector-icons/Feather";
 
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
@@ -32,25 +32,20 @@ export default function AdminTestOverviewScreen() {
 
   const userPermissions = user?.role || 0;
 
-  // Echte, strikte Admin-Prüfung
   const isAdmin = (userPermissions & PERM_ADMIN) === PERM_ADMIN;
   const canDeleteOwn =
     (userPermissions & PERM_DELETE_TESTS) === PERM_DELETE_TESTS;
 
-  // Admin sieht standardmäßig immer alles, User niemals
   const allUserTests = isAdmin;
 
   const [groupedData, setGroupedData] = useState<any[]>([]);
   const [userMap, setUserMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
-  // Nicht-Admins überspringen die Admin-OTP-Verifizierung komplett
   const [isVerified, setIsVerified] = useState(!isAdmin && canDeleteOwn);
 
-  // --- TAB STATE ---
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
-  // --- SELECTION & EXPANSION STATES ---
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -69,7 +64,6 @@ export default function AdminTestOverviewScreen() {
         isAdmin ? client.getAllUsers() : Promise.resolve([]),
       ]);
 
-      // 1. User Map befüllen
       const mapping: Record<string, string> = {};
 
       if (isAdmin && Array.isArray(usersResult)) {
@@ -85,7 +79,6 @@ export default function AdminTestOverviewScreen() {
 
       setUserMap(mapping);
 
-      // 2. Gruppen-Daten verarbeiten
       let groups = Array.isArray(testResult)
         ? testResult
         : testResult.tests || [];
@@ -100,7 +93,6 @@ export default function AdminTestOverviewScreen() {
 
       setGroupedData(groups);
 
-      // Tab setzen
       if (groups.length > 0) {
         const currentTabExists = groups.some((g) => g._id === activeTab);
         if (!currentTabExists || !activeTab) {
@@ -123,7 +115,6 @@ export default function AdminTestOverviewScreen() {
   const currentTests =
     groupedData.find((g) => g._id === activeTab)?.tests || [];
 
-  // --- ACTIONS ---
   const toggleSelectAll = () => {
     if (selectedIds.size === currentTests.length && currentTests.length > 0) {
       setSelectedIds(new Set());
@@ -191,9 +182,9 @@ export default function AdminTestOverviewScreen() {
             onPress={() => toggleItemSelection(item._id)}
             style={styles.checkbox}
           >
-            <Ionicons
-              name={isSelected ? "checkbox" : "square-outline"}
-              size={24}
+            <Feather
+              name={isSelected ? "check-square" : "square"}
+              size={22}
               color={isSelected ? colors.primary : colors.text}
             />
           </TouchableOpacity>
@@ -227,7 +218,7 @@ export default function AdminTestOverviewScreen() {
                   </ThemedText>
                 </ThemedText>
               </View>
-              <Ionicons
+              <Feather
                 name={isExpanded ? "chevron-up" : "chevron-down"}
                 size={18}
                 color={colors.text}
@@ -344,12 +335,10 @@ export default function AdminTestOverviewScreen() {
             </View>
           ) : (
             <>
-              {/* 1. GRAUE LINIE: Zwischen Titel und Tabs */}
               <View
                 style={[styles.separator, { backgroundColor: colors.border }]}
               />
 
-              {/* Reiterkarten-Leiste */}
               {groupedData.length > 0 && (
                 <View style={styles.tabsWrapper}>
                   <ScrollView
@@ -393,7 +382,6 @@ export default function AdminTestOverviewScreen() {
                 </View>
               )}
 
-              {/* 2. GRAUE LINIE: Zwischen Tabs und Buttonleiste */}
               {groupedData.length > 0 && (
                 <View
                   style={[
@@ -443,7 +431,7 @@ const styles = StyleSheet.create({
   container: { padding: 20, gap: 10 },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 5 },
   otpSection: { padding: 20, alignItems: "center" },
-  separator: { height: 1, width: "100%" }, // Basis-Style für die grauen Linien
+  separator: { height: 1, width: "100%" },
   tabsWrapper: { marginVertical: 10 },
   tabsContainer: { flexDirection: "row", gap: 8, paddingBottom: 4 },
   tabButton: {

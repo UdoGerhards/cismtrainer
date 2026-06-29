@@ -278,19 +278,6 @@ function HeaderRight({ user, router, theme, setTheme, logout }: any) {
             <Text style={{ color: colors.text }}>👤 Profile</Text>
           </TouchableOpacity>
 
-          {/* 🔒 BITMASKEN-PRÜFUNG: Zeigt das User Management im Dropdown an */}
-          {showUserManagementLink && (
-            <TouchableOpacity
-              onPress={() => {
-                setOpen(false);
-                router.push("/maintainance/users");
-              }}
-              style={styles.dropdownItem}
-            >
-              <Text style={{ color: colors.text }}>👥 User Management</Text>
-            </TouchableOpacity>
-          )}
-
           <TouchableOpacity
             onPress={() => {
               setOpen(false);
