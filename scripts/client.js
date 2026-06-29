@@ -187,8 +187,6 @@ class Client extends Base {
   async me(token) {
     const data = await this.request("/me", { method: "GET" }, token);
 
-    console.log(token);
-
     if (!data?.user) {
       throw new Error("Invalid /me response");
     }

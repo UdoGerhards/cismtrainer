@@ -24,12 +24,12 @@ LogBox.ignoreLogs(["props.pointerEvents is deprecated"]);
 const PERM_KI_USE_ALLOWED = 0b010000;
 const PERM_ADMIN = 0b111111;
 
-// 🌟 Name von HomeScreen zu RandomQuestionScreen geändert
 export default function RandomQuestionScreen() {
   const { user, loading: authLoading } = useAuth();
   const { colors } = useTheme();
 
-  const [questions, setQuestions] = useState<QuestionItem[]>([]);
+  // Anpassung: Wir erwarten ein einzelnes QuestionItem Objekt, nicht ein Array
+  const [question, setQuestion] = useState<QuestionItem | null>(null);
   const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(
     null,
   );
@@ -57,9 +57,18 @@ export default function RandomQuestionScreen() {
     client
       .fetchQuestion()
       .then((qstns) => {
-        let data = qstns[0];
+        let data = qstns[0]; // Das erste Element der Antwort
 
-        setQuestions(data);
+        if (data && data.answers) {
+          // Felder für die Antworten anreichern
+          data.answers = data.answers.map((ans: any) => ({
+            ...ans,
+            question_id: data._id,
+            question: data.ID,
+          }));
+        }
+
+        setQuestion(data);
         setChecked(false);
         setCurrentQuestionId(data?._id || null);
         setLoading(false);
@@ -82,16 +91,12 @@ export default function RandomQuestionScreen() {
 
   const handleExplain = async () => {
     if (!currentQuestionId) return;
-
     setExpanded(true);
-
     if (explanations[currentQuestionId]) return;
 
     try {
       setLoadingExplanation(currentQuestionId);
-
       const res = await client.getExplanation(currentQuestionId);
-
       setExplanations((prev) => ({
         ...prev,
         [currentQuestionId]: res || "Keine Erklärung vorhanden",
@@ -115,7 +120,7 @@ export default function RandomQuestionScreen() {
     );
   }
 
-  if (loading || !questions) {
+  if (loading || !question) {
     return (
       <ThemedView style={styles.stepContainer}>
         <ThemedText>Lade Fragen ...</ThemedText>
@@ -140,10 +145,11 @@ export default function RandomQuestionScreen() {
           }}
           headerImage={<HeaderLogo />}
         >
+          {/* Hier werden die angereicherten Daten übergeben */}
           <Question
             key={currentQuestionId}
             ref={questionRef}
-            question={questions}
+            question={question}
             checked={checked}
             user={user}
             onAnswerSelected={handleAnswerSelected}

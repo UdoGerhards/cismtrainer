@@ -33,7 +33,12 @@ function TestComponent(
   return (
     <ThemedView style={styles.stepContainer}>
       {/* 🔥 Fragetext */}
-      <ThemedText style={styles.questionText}>{question.question}</ThemedText>
+      <ThemedText style={styles.questionText}>
+        {question.question} <br />
+        <ThemedText style={{ color: "#aaaaaa", fontWeight: "normal" }}>
+          {question.ID}-{question._id}
+        </ThemedText>
+      </ThemedText>
 
       {/* 🔥 Antworten */}
       <Answers

@@ -34,7 +34,7 @@ export default function Answers({
     setSelected(answer._id);
 
     // 1. Ergebnis lokal prüfen
-    const result = answer.answer.trim() === correct.trim();
+    const result = answer.type.trim() === correct.trim();
     const safeTest = typeof test === "undefined" ? null : test;
 
     try {
@@ -109,7 +109,13 @@ export default function Answers({
               onPress={() => handleSelect(answer)}
             />
 
-            <ThemedText style={styles.answerText}>{answer.text}</ThemedText>
+            <ThemedText style={styles.answerText}>
+              {answer.text}
+              <br />
+              <ThemedText style={{ color: "#aaaaaa" }}>
+                {answer.question} - {answer.question_id} - {answer.type}{" "}
+              </ThemedText>
+            </ThemedText>
           </TouchableOpacity>
         );
       })}

@@ -65,7 +65,16 @@ export default function TestErgebnisScreen() {
   }, [testId]);
 
   function getCorrectAnswerText(answers: any[], correctKey: string) {
-    return answers?.find((a) => a.answer === correctKey)?.text || "—";
+    let txt = "—";
+    answers.forEach((a) => {
+      console.log(a.type + " - " + a.text);
+
+      if (a.type.trim() === correctKey.trim()) {
+        txt = a.text.trim();
+      }
+    });
+
+    return txt;
   }
 
   const handlePress = async (item: any) => {
