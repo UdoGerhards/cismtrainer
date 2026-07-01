@@ -14,31 +14,29 @@ export default function Answers({
   questionId,
   test,
   user,
-  onSelectAnswer, // 🌟 NEU: Dieses Callback informiert die Question-Komponente über den Klick
+  onSelectAnswer,
 }: {
   answers: Answer[];
   correct: string;
   checked: boolean;
-  questionId: string | number; // Flexibel gehalten, falls IDs Strings sind
+  questionId: string | number;
   test: string | number | null;
   user: any;
-  onSelectAnswer: () => void; // 🌟 NEU
+  onSelectAnswer: () => void;
 }) {
   const { colors, dark } = useTheme();
-
   const [selected, setSelected] = useState<string | null>(null);
 
   const handleSelect = async (answer: Answer) => {
-    if (checked) return; // Wenn schon ausgewertet, Klicks sperren
+    if (checked) return;
 
     setSelected(answer._id);
 
-    // 1. Ergebnis lokal prüfen
-    const result = answer.type.trim() === correct.trim();
+    // Prüfung basierend auf ID-Vergleich
+    const result = answer._id === correct;
     const safeTest = typeof test === "undefined" ? null : test;
 
     try {
-      // 2. Antwort direkt im Hintergrund an den Server senden
       if (client.setGivenAnswer) {
         await client.setGivenAnswer(
           user.id,
@@ -48,7 +46,6 @@ export default function Answers({
           result,
         );
       } else if (client.sendGivenAnswer) {
-        // Falls deine Methode im Client 'sendGivenAnswer' heißt:
         await client.sendGivenAnswer(
           user.id,
           safeTest,
@@ -61,8 +58,6 @@ export default function Answers({
       console.error("Fehler beim Senden der Antwort:", err);
     }
 
-    // 3. Dem Parent-Screen Bescheid geben, damit checked auf true gesetzt wird
-    // (Aktiviert sofort die Farben und zeigt den "Next"-Button)
     onSelectAnswer();
   };
 
@@ -70,22 +65,20 @@ export default function Answers({
     <ThemedView>
       {answers.map((answer) => {
         const isSelected = selected === answer._id;
-        const isCorrect = answer.answer === correct;
+        const isCorrect = answer.type.trim() === correct.trim();
+        // Basis-Farben
+        let backgroundColor =
+          colors.answerBackground || (dark ? "#1e1e1e" : "#f5f5f5");
 
-        // 🔥 Basis-Hintergrund (Light/Dark sauber definiert)
-        let backgroundColor = colors.answerBackground
-          ? colors.answerBackground
-          : dark
-            ? "#1e1e1e"
-            : "#f5f5f5";
-
-        // ✅ Zustand nach Auswahl (Rot/Grün Einfärbung)
+        // Logik für die Einfärbung nach Auswahl
         if (checked) {
           if (isCorrect) {
-            backgroundColor = dark ? "#1b5e20" : "#d4edda"; // grün bei korrekter Antwort
+            backgroundColor = dark ? "#1b5e20" : "#d4edda"; // Grün für korrekt
           } else if (isSelected) {
-            backgroundColor = dark ? "#7f1d1d" : "#f8d7da"; // rot bei falscher Auswahl
+            backgroundColor = dark ? "#7f1d1d" : "#f8d7da"; // Rot nur für die falsch gewählte
           }
+        } else if (isSelected) {
+          backgroundColor = colors.primary + "30"; // Leichtes Highlight während der Auswahl
         }
 
         return (
@@ -97,7 +90,7 @@ export default function Answers({
               styles.answerContainer,
               {
                 backgroundColor,
-                borderColor: colors.border,
+                borderColor: isSelected ? colors.primary : colors.border,
               },
             ]}
           >
@@ -111,9 +104,9 @@ export default function Answers({
 
             <ThemedText style={styles.answerText}>
               {answer.text}
-              <br />
-              <ThemedText style={{ color: "#aaaaaa" }}>
-                {answer.question} - {answer.question_id} - {answer.type}{" "}
+              {"\n"}
+              <ThemedText style={{ color: "#aaaaaa", fontSize: 12 }}>
+                {answer.question_id}
               </ThemedText>
             </ThemedText>
           </TouchableOpacity>
@@ -134,6 +127,6 @@ const styles = StyleSheet.create({
   },
   answerText: {
     marginLeft: 8,
-    flex: 1, // Verhindert Text-Overflow bei sehr langen Antworttexten
+    flex: 1,
   },
 });

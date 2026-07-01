@@ -14,7 +14,7 @@ import { HeaderLogo } from "@/components/headerLogo";
 import PasswordInput from "@/components/passwordInput";
 
 export default function LoginScreen() {
-  const { colors } = useTheme(); // ✅ THEME
+  const { colors } = useTheme();
   const { login } = useAuth();
   const router = useRouter();
 
@@ -22,7 +22,12 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const isFormValid = email.trim().length > 0 && password.trim().length > 0;
+  // Hilfsfunktion zur E-Mail-Validierung
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const isFormValid = isValidEmail(email) && password.trim().length > 0;
 
   useFocusEffect(
     useCallback(() => {
@@ -82,9 +87,9 @@ export default function LoginScreen() {
             value={email}
             onChangeText={(text) => {
               setEmail(text);
-              setError("");
+              if (error) setError("");
             }}
-            placeholder="E-Mail"
+            placeholder="john.doe@john-doe.de"
             placeholderTextColor={colors.border}
             autoCapitalize="none"
             keyboardType="email-address"
@@ -109,7 +114,7 @@ export default function LoginScreen() {
             value={password}
             onChangeText={(text) => {
               setPassword(text);
-              setError("");
+              if (error) setError("");
             }}
             returnKeyType="done"
             onSubmitEditing={handleLogin}
@@ -159,5 +164,6 @@ const styles = StyleSheet.create({
   },
   error: {
     fontSize: 14,
+    marginTop: 5,
   },
 });

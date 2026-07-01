@@ -336,7 +336,7 @@ class Client extends Base {
   }
 
   async getExplanation(questionId) {
-    return this.request("/explain", {
+    return await this.request("/explain", {
       method: "POST",
       body: JSON.stringify({ questionId }),
     });
